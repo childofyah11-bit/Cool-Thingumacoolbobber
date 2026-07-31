@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>tERMINAL</title>
+    <title>MATRIX OS TERMINAL</title>
     <link rel="dns-prefetch" href="https://8.8.8">
     <link rel="dns-prefetch" href="https://1.1.1">
     <link rel="preconnect" href="https://1.1.1" crossorigin>
@@ -15,7 +16,6 @@
             text-align: center; 
             padding: 30px; 
             margin: 0;
-            /* Cyberpunk scanline effect overlay */
             background-image: linear-gradient(rgba(16, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), 
                               linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
             background-size: 100% 4px, 6px 100%;
@@ -61,7 +61,7 @@
         }
         .hud-card {
             background: #040906;
-            border: 1px dashed #1f6b33;
+            border: 1px solid #1f6b33;
             padding: 15px;
             text-align: left;
         }
@@ -77,48 +77,57 @@
             color: #58ff88; 
             font-weight: bold; 
             text-transform: uppercase;
-            text-shadow: 0 0 5px rgba(0, 255, 106, 0.4);
         } 
         .latency-badge { 
             font-size: 22px; 
             color: #00ffff; 
             font-weight: bold;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
         } 
-        .terminal-header {
-            text-align: left;
-            font-size: 12px;
-            color: #1f6b33;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
-        }
-        .log-container { 
-            text-align: left; 
+        .terminal-box {
             background: #020402; 
             border: 1px solid #1f6b33; 
-            padding: 15px; 
-            height: 250px; 
+            padding: 15px;
+            text-align: left;
+        }
+        .log-container { 
+            height: 220px; 
             overflow-y: auto; 
             font-size: 12px; 
             color: #3fb950;
-            box-shadow: inset 0 0 10px rgba(0,0,0,1);
+            margin-bottom: 10px;
         } 
+        .input-line {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #58ff88;
+            border-top: 1px solid #1f6b33;
+            padding-top: 10px;
+        }
+        .prompt-label {
+            margin-right: 5px;
+            white-space: pre;
+        }
+        .cmd-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ffff;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+        }
         .success { color: #58ff88; } 
         .info { color: #00ffff; } 
-        .fail { color: #ff3333; font-weight: bold; background: rgba(255,50,50,0.1); padding: 0 3px; animation: blink 1s infinite; } 
-        
-        @keyframes blink {
-            50% { opacity: 0.5; }
-        }
+        .fail { color: #ff3333; font-weight: bold; } 
     </style>
 </head>
 <body>
     <div class="container"> 
-        <div class="corner-tag">SECURE_NODE_v4.2</div>
+        <div class="corner-tag">VIRTUAL_CORE_v5.0</div>
         <h1>Uplink Mainframe</h1> 
-        <div class="subtitle">// Network Persistence Matrix //</div> 
+        <div class="subtitle">// Interactive Shell Environment //</div> 
         
-        <!-- Streamlined Performance HUD Grid -->
         <div class="hud-grid">
             <div class="hud-card">
                 <div class="hud-label">📡 System State</div>
@@ -130,34 +139,68 @@
             </div>
         </div>
         
-        <!-- Persistent Live Output Terminal at the Bottom --> 
-        <div class="terminal-header">⚙️ LIVE MATRIX DATA INGEST:</div>
-        <div class="log-container" id="log-box"></div> 
+        <!-- Integrated Interactive Terminal Console Container -->
+        <div class="terminal-box">
+            <div class="log-container" id="log-box"></div> 
+            <div class="input-line">
+                <span class="prompt-label">user@netcore:~#</span>
+                <input type="text" id="cmd-field" class="cmd-input" placeholder="Type 'help' for available overrides..." autocomplete="off" autofocus>
+            </div>
+        </div>
     </div> 
 
     <script> 
         const logBox = document.getElementById('log-box'); 
         const statusText = document.getElementById('status-text'); 
         const latencyText = document.getElementById('latency-text'); 
+        const cmdField = document.getElementById('cmd-field');
 
         function appendLog(message, type) { 
             requestAnimationFrame(() => { 
-                const time = new Date().toLocaleTimeString(); 
                 const logEntry = document.createElement('div'); 
-                logEntry.className = type; 
-                logEntry.innerHTML = `[${time}] user@netcore:~# ${message}`; 
+                logEntry.className = type || ''; 
+                logEntry.innerHTML = message; 
                 logBox.appendChild(logEntry); 
                 logBox.scrollTop = logBox.scrollHeight; 
             }); 
         } 
 
-        if ('serviceWorker' in navigator) { 
-            window.addEventListener('load', () => { 
-                navigator.serviceWorker.register('./sw.js') 
-                .then(() => appendLog("Offline validation pipelines active.", "success")) 
-                .catch(err => appendLog(`Core mismatch: ${err.message}`, "info")); 
-            }); 
-        } 
+        // Live Command Execution Handler
+        cmdField.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const input = this.value.trim().toLowerCase();
+                if (!input) return;
+                
+                appendLog(`[INPUT] user@netcore:~# ${this.value}`, 'info');
+                this.value = ''; // Reset prompt input
+
+                switch(input) {
+                    case 'help':
+                        appendLog(" > Sub-system commands: [status, neofetch, clear, matrix, ping]", "info");
+                        break;
+                    case 'status':
+                        appendLog(` > Mainframe state: ${statusText.innerText} | Interval thread tracking active.`, "success");
+                        break;
+                    case 'clear':
+                        logBox.innerHTML = '';
+                        break;
+                    case 'matrix':
+                        appendLog(" > Wake up, Neo... The Matrix has you. Follow the white rabbit. 🖥️", "success");
+                        break;
+                    case 'ping':
+                        appendLog(` > Direct manual interface ping echo checked: ${latencyText.innerText}`, "info");
+                        break;
+                    case 'neofetch':
+                        appendLog(" 🖥️  <b>OS:</b> Titan Matrix Core OS v5.0<br> 📟 <b>Shell:</b> Netcore Bash emu<br> 📡 <b>Uplink:</b> Starlink Persistent Loop", "success");
+                        break;
+                    default:
+                        appendLog(` > Command execution failure: '${input}' unrecognized by terminal architecture.`, "fail");
+                }
+            }
+        });
+
+        // Click wrapper to maintain keyboard target focus
+        document.querySelector('.terminal-box').addEventListener('click', () => cmdField.focus());
 
         const worker = new Worker('./worker.js'); 
         worker.onmessage = function(e) { 
@@ -170,16 +213,16 @@
                     latencyText.innerText = `${latency} MS`; 
                     statusText.innerText = "ONLINE / SECURED"; 
                     statusText.style.color = "#58ff88"; 
-                    appendLog(`Network intercept stable. Sync payload verified at ${latency}ms.`, "success"); 
                 }) 
                 .catch(() => { 
                     statusText.innerText = "DROPPED / RETRYING"; 
                     statusText.style.color = "#ff3333"; 
-                    appendLog("ALERT: Network drop detected. Rerouting intercept protocols.", "fail"); 
+                    appendLog("[ALERT] Sub-thread connection drop caught. Initializing cycle.", "fail"); 
                 }); 
             } 
         }; 
-        appendLog("Matrix background loop active and monitoring.", "success"); 
+        appendLog("<b>Matrix Virtual Mainframe v5.0</b> successfully booted.", "success");
+        appendLog("Type <u><b>help</b></u> into the lower command line interface to input overrides.", "info");
     </script> 
 </body>
 </html>

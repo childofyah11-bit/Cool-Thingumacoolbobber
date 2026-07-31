@@ -2,194 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System  Thingama jigger</title>
+    <title>idk</title>
     <style>
-        body {
-            background-color: #0b1016;
-            color: #00ffcc;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            border: 2px solid #00ffcc;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
-        }
-        h1 {
-            text-align: center;
-            color: #ffffff;
-            text-shadow: 0 0 8px #00ffcc;
-        }
-        .controls {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-        }
-        button {
-            background-color: transparent;
-            color: #00ffcc;
-            border: 2px solid #00ffcc;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-        }
-        button:hover {
-            background-color: #00ffcc;
-            color: #0b1016;
-            box-shadow: 0 0 10px #00ffcc;
-        }
-        button:disabled {
-            border-color: #555;
-            color: #555;
-            cursor: not-allowed;
-        }
-        .progress-bar-container {
-            width: 100%;
-            background-color: #1a2330;
-            border: 1px solid #00ffcc;
-            height: 25px;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background-color: #00ffcc;
-            transition: width 0.1s linear;
-        }
-        .terminal {
-            background-color: #05080c;
-            border: 1px solid #334455;
-            height: 300px;
-            padding: 15px;
-            overflow-y: auto;
-            border-radius: 4px;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        .log-info { color: #ffffff; }
-        .log-warn { color: #ffcc00; }
-        .log-danger { color: #ff3333; font-weight: bold; }
-        .log-success { color: #33ff33; font-weight: bold; }
+        body { background: #0b1016; color: #33ff33; font-family: monospace; padding: 30px; }
     </style>
 </head>
 <body>
+    <h2>BLE Hardware Discovery Engine</h2>
+    <button id="scan">Scan for Bluetooth Hardware</button>
+    <ul id="deviceList"></ul>
 
-<div class="container">
-    <h1>CORE SYSTEM DEBUGGER v1.0.4</h1>
-    <p style="text-align: center; color: #88a0b0;">Simulated Security Environment</p>
-    
-    <div class="controls">
-        <button id="scanBtn" onclick="startSimulatedScan()">INITIALIZE DIAGNOSTIC</button>
-        <button id="killBtn" onclick="purgeThreats()" disabled>PURGE DETECTED MALWARE</button>
-    </div>
-
-    <div class="progress-bar-container">
-        <div id="progressBar" class="progress-bar"></div>
-    </div>
-
-    <div id="terminal" class="terminal">
-        <span class="log-info">[SYSTEM] Debugger ready. Click "INITIALIZE DIAGNOSTIC" to begin analysis...</span><br>
-    </div>
-</div>
-
-<script>
-    const terminal = document.getElementById('terminal');
-    const progressBar = document.getElementById('progressBar');
-    const scanBtn = document.getElementById('scanBtn');
-    const killBtn = document.getElementById('killBtn');
-    
-    let simulatedThreatsFound = false;
-
-    const logMessages = [
-        { time: 200, text: "[DEBUG] Accessing memory registers...", type: "log-info" },
-        { time: 600, text: "[DEBUG] Analyzing master boot record sectors...", type: "log-info" },
-        { time: 1200, text: "[WARNING] Unrecognized background thread detected in ID: 4092", type: "log-warn" },
-        { time: 1800, text: "[DEBUG] Verifying integrity of core system libraries...", type: "log-info" },
-        { time: 2300, text: "[CRITICAL] MALWARE DETECTED: Trojan.Generic.Cryptominer residing in Temp folder!", type: "log-danger" },
-        { time: 2800, text: "[CRITICAL] MALWARE DETECTED: Adware.Helper.Spyware tracking browser metrics!", type: "log-danger" },
-        { time: 3500, text: "[DEBUG] Scanning active port allocations...", type: "log-info" },
-        { time: 4200, text: "[WARNING] Outbound connection anomaly on Port 8080", type: "log-warn" },
-        { time: 4800, text: "[SYSTEM] Scan complete. 2 Critical Anomalies detected. Immediate intervention required.", type: "log-warn" }
-    ];
-
-    function appendLog(text, type) {
-        const line = document.createElement('span');
-        line.className = type;
-        line.innerText = text;
-        terminal.appendChild(line);
-        terminal.appendChild(document.createElement('br'));
-        terminal.scrollTop = terminal.scrollHeight;
-    }
-
-    function startSimulatedScan() {
-        // Reset states
-        terminal.innerHTML = "";
-        progressBar.style.width = "0%";
-        scanBtn.disabled = true;
-        killBtn.disabled = true;
-        simulatedThreatsFound = false;
-        
-        appendLog("[SYSTEM] Starting complete system scan...", "log-info");
-
-        // Progress bar simulation
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += 2;
-            progressBar.style.width = progress + "%";
-            if (progress >= 100) {
-                clearInterval(progressInterval);
+    <script>
+        document.getElementById('scan').addEventListener('click', async () => {
+            try {
+                // Request physical Bluetooth device discovery parameters
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true
+                });
+                const item = document.createElement('li');
+                item.innerText = `Found Device: Name = ${device.name || 'Unknown'}, ID = ${device.id}`;
+                document.getElementById('deviceList').appendChild(item);
+            } catch (error) {
+                console.log("Discovery canceled or failed: " + error);
             }
-        }, 100);
-
-        // Print system logs sequentially
-        logMessages.forEach(msg => {
-            setTimeout(() => {
-                appendLog(msg.text, msg.type);
-                if (msg.type === "log-danger") {
-                    simulatedThreatsFound = true;
-                }
-                if (msg.text.includes("Scan complete")) {
-                    killBtn.disabled = !simulatedThreatsFound;
-                    scanBtn.disabled = false;
-                }
-            }, msg.time);
         });
-    }
-
-    function purgeThreats() {
-        killBtn.disabled = true;
-        appendLog("[SYSTEM] Initiating threat purge sequence...", "log-warn");
-        
-        setTimeout(() => {
-            appendLog("[ACTION] Isolating Trojan.Generic.Cryptominer...", "log-info");
-        }, 800);
-        
-        setTimeout(() => {
-            appendLog("[SUCCESS] Trojan.Generic.Cryptominer successfully destroyed.", "log-success");
-        }, 1800);
-
-        setTimeout(() => {
-            appendLog("[ACTION] Removing Adware.Helper.Spyware registries...", "log-info");
-        }, 2400);
-
-        setTimeout(() => {
-            appendLog("[SUCCESS] Adware.Helper.Spyware neutralized and purged from disk.", "log-success");
-            appendLog("[SYSTEM] All active threats killed. Your simulated environment is safe.", "log-success");
-            progressBar.style.width = "0%";
-            scanBtn.disabled = false;
-        }, 3400);
-    }
-</script>
-
+    </script>
 </body>
 </html>

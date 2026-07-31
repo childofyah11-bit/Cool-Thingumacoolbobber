@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHAPE PLATFORMER</title>
+    <title>CYBER ARENA</title>
     <style>
         body {
             background-color: #050806;
@@ -65,28 +65,27 @@
             margin-bottom: 8px;
         }
         .val { color: #00ffff; font-weight: bold; }
+        .danger-val { color: #ff3333; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        ⚡ MISSION INTERCEPT // USE A / D TO STEER CHARACTER MODEL ⚡
+        ⚡ CYBER DUEL // A / D to Move • Spacebar to Fire Laser Blaster ⚡
     </div>
 
     <div class="workspace">
-        <!-- Main Interactive Game Board Viewport -->
         <div id="canvas-container">
-            <canvas id="game-deck" width="550" height="400"></canvas>
+            <canvas id="game-deck" width="600" height="400"></canvas>
         </div>
 
-        <!-- Telemetry Tracker Readout Windows Panel -->
         <div class="matrix-panel">
-            <div class="panel-title">🛰️ ENGINE METRICS LAYER</div>
-            <div class="telemetry-row">SECTOR CORES: <span class="val" id="m-cores">ONLINE</span></div>
-            <div class="telemetry-row">MODEL SCALE: <span class="val">40% (SHRUNK)</span></div>
-            <div class="telemetry-row">PLAYER POS_X: <span class="val" id="p-x">250</span></div>
+            <div class="panel-title">🛰️ ARENA \</div>
+            <div class="telemetry-row">ARENA STATE: <span class="val" id="g-state">ENGAGED</span></div>
+            <div class="telemetry-row">BLUE HP: <span class="val" id="h-blue">100/100</span></div>
+            <div class="telemetry-row">RED HP: <span class="danger-val" id="h-red">100/100</span></div>
             <div class="telemetry-row" style="border-top: 1px dashed #1f6b33; padding-top:8px; margin-top:8px;">
-                TOTAL COINS: <span class="val" style="color:#ffea00;" id="m-score">0</span>
+                TOTAL WINS: <span class="val" style="color:#ffea00;" id="m-score">0</span>
             </div>
         </div>
     </div>
@@ -95,113 +94,87 @@
         const canvas = document.getElementById('game-deck');
         const ctx = canvas.getContext('2d');
 
-        // Dynamic State Tracking Vectors
-        let playerX = 250;
-        const playerY = 270; // Positioned firmly onto the green ground deck floor strip
-        const scaleFactor = 0.4; // COMPRESSION METRIC: Shrinks the character asset down to 40% size
+        // Scaling parameters
+        const scaleFactor = 0.4;
+        const groundY = 340;
+        const playerY = 270;
+
+        // Player States (Blue)
+        let playerX = 100;
+        let playerHP = 100;
         let score = 0;
+        let blueLasers = [];
 
-        // Collectible Core Coordinate Points Array
-        let coin = { x: 100, y: 310, active: true };
+        // CPU Bot States (Red)
+        let cpuX = 450;
+        let cpuHP = 100;
+        let cpuDirection = -1;
+        let cpuLaserCooldown = 0;
+        let redLasers = [];
 
-        // Keyboard Register Key Arrays
+        // Input Arrays
         const activeKeys = { a: false, d: false };
-        window.addEventListener('keydown', e => { if(e.key.toLowerCase() in activeKeys) activeKeys[e.key.toLowerCase()] = true; });
-        window.addEventListener('keyup', e => { if(e.key.toLowerCase() in activeKeys) activeKeys[e.key.toLowerCase()] = false; });
+        window.addEventListener('keydown', e => { 
+            if(e.key.toLowerCase() in activeKeys) activeKeys[e.key.toLowerCase()] = true; 
+        });
+        window.addEventListener('keyup', e => { 
+            if(e.key.toLowerCase() in activeKeys) activeKeys[e.key.toLowerCase()] = false; 
+            if(e.key === ' ' && playerHP > 0 && cpuHP > 0) fireBlueLaser();
+        });
 
-        // Original Unscaled Shape Blueprint Offset Database
+        // The exact geometric character sub-mesh structure blueprint layout
         const shapesBlueprint = [
-            // Head Module (Centered around 200, 90)
-            { type: "circle", ox: 0, oy: 0, r: 25, color: "#1e3a8a" }, // Helmet Base
-            { type: "rect", ox: -15, oy: -15, w: 30, h: 12, color: "#00ffff" }, // Visor
-            { type: "rect", ox: -6, oy: 8, w: 12, h: 10, color: "#475569" }, // Breather
-            
-            // Torso (Centered around 200, 160)
-            { type: "rect", ox: -40, oy: 35, w: 80, h: 30, color: "#1e40af" }, // Chest
-            { type: "rect", ox: -35, oy: 70, w: 70, h: 15, color: "#0f172a" }, // Abdomen 1
-            { type: "rect", ox: -32, oy: 90, w: 64, h: 15, color: "#111827" }, // Abdomen 2
-            { type: "rect", ox: -38, oy: 110, w: 76, h: 12, color: "#b45309" }, // Belt
-            { type: "circle", ox: 0, oy: 116, r: 5, color: "#f59e0b" }, // Buckle
-
-            // Left Arm Modules
-            { type: "circle", ox: -50, oy: 45, r: 10, color: "#334155" }, // Shoulder
-            { type: "rect", ox: -65, oy: 55, w: 14, h: 25, color: "#1d4ed8" }, // Bicep
-            { type: "circle", ox: -58, oy: 85, r: 6, color: "#475569" }, // Elbow
-            { type: "rect", ox: -64, oy: 93, w: 12, h: 25, color: "#1e40af" }, // Forearm
-            { type: "circle", ox: -58, oy: 122, r: 5, color: "#64748b" }, // Hand
-
-            // Right Arm Modules
-            { type: "circle", ox: 50, oy: 45, r: 10, color: "#334155" }, // Shoulder
-            { type: "rect", ox: 51, oy: 55, w: 14, h: 25, color: "#1d4ed8" }, // Bicep
-            { type: "circle", ox: 58, oy: 85, r: 6, color: "#475569" }, // Elbow
-            { type: "rect", ox: 52, oy: 93, w: 12, h: 25, color: "#1e40af" }, // Forearm
-            { type: "circle", ox: 58, oy: 122, r: 5, color: "#64748b" }, // Hand
-
-            // Left Leg Modules
-            { type: "rect", ox: -35, oy: 125, w: 28, h: 15, color: "#0f172a" }, // Hip
-            { type: "rect", ox: -32, oy: 145, w: 22, h: 35, color: "#1e40af" }, // Thigh
-            { type: "circle", ox: -21, oy: 186, r: 7, color: "#475569" }, // Knee
-            { type: "rect", ox: -31, oy: 197, w: 20, h: 40, color: "#1d4ed8" }, // Shin
-            { type: "rect", ox: -39, oy: 240, w: 28, h: 12, color: "#0f172a" }, // Boot
-
-            // Right Leg Modules
-            { type: "rect", ox: 7, oy: 125, w: 28, h: 15, color: "#0f172a" }, // Hip
-            { type: "rect", ox: 10, oy: 145, w: 22, h: 35, color: "#1e40af" }, // Thigh
-            { type: "circle", ox: 25, oy: 186, r: 7, color: "#475569" }, // Knee
-            { type: "rect", ox: 11, oy: 197, w: 20, h: 40, color: "#1d4ed8" }, // Shin
-            { type: "rect", ox: 11, oy: 240, w: 28, h: 12, color: "#0f172a" } // Boot
+            // Head Module
+            { type: "circle", ox: 0, oy: 0, r: 25, isArmor: true }, 
+            { type: "rect", ox: -15, oy: -15, w: 30, h: 12, isVisor: true }, 
+            { type: "rect", ox: -6, oy: 8, w: 12, h: 10, isVent: true }, 
+            // Torso
+            { type: "rect", ox: -40, oy: 35, w: 80, h: 30, isArmor: true }, 
+            { type: "rect", ox: -35, oy: 70, w: 70, h: 15, isDark: true }, 
+            { type: "rect", ox: -32, oy: 90, w: 64, h: 15, isDark: true }, 
+            { type: "rect", ox: -38, oy: 110, w: 76, h: 12, isBelt: true }, 
+            { type: "circle", ox: 0, oy: 116, r: 5, isBuckle: true }, 
+            // Left Arm
+            { type: "circle", ox: -50, oy: 45, r: 10, isJoint: true }, 
+            { type: "rect", ox: -65, oy: 55, w: 14, h: 25, isArmor: true }, 
+            { type: "circle", ox: -58, oy: 85, r: 6, isJoint: true }, 
+            { type: "rect", ox: -64, oy: 93, w: 12, h: 25, isArmor: true }, 
+            { type: "circle", ox: -58, oy: 122, r: 5, isHand: true }, 
+            // Right Arm
+            { type: "circle", ox: 50, oy: 45, r: 10, isJoint: true }, 
+            { type: "rect", ox: 51, oy: 55, w: 14, h: 25, isArmor: true }, 
+            { type: "circle", ox: 58, oy: 85, r: 6, isJoint: true }, 
+            { type: "rect", ox: 52, oy: 93, w: 12, h: 25, isArmor: true }, 
+            { type: "circle", ox: 58, oy: 122, r: 5, isHand: true }, 
+            // Left Leg
+            { type: "rect", ox: -35, oy: 125, w: 28, h: 15, isDark: true }, 
+            { type: "rect", ox: -32, oy: 145, w: 22, h: 35, isArmor: true }, 
+            { type: "circle", ox: -21, oy: 186, r: 7, isJoint: true }, 
+            { type: "rect", ox: -31, oy: 197, w: 20, h: 40, isArmor: true }, 
+            { type: "rect", ox: -39, oy: 240, w: 28, h: 12, isDark: true }, 
+            // Right Leg
+            { type: "rect", ox: 7, oy: 125, w: 28, h: 15, isDark: true }, 
+            { type: "rect", ox: 10, oy: 145, w: 22, h: 35, isArmor: true }, 
+            { type: "circle", ox: 21, oy: 186, r: 7, isJoint: true }, 
+            { type: "rect", ox: 11, oy: 197, w: 20, h: 40, isArmor: true }, 
+            { type: "rect", ox: 11, oy: 240, w: 28, h: 12, isDark: true }
         ];
 
-        function respawnCoin() {
-            coin.x = Math.floor(Math.random() * 480) + 35;
-            coin.y = Math.floor(Math.random() * 100) + 230; // Spawns directly on reachable running channels
-            coin.active = true;
+        function fireBlueLaser() {
+            blueLasers.push({ x: playerX + 30, y: playerY + 25, speed: 8 });
         }
 
-        function gameLoop() {
-            // Player Motion Intercept Calculators
-            if (activeKeys.a && playerX > 35) playerX -= 4;
-            if (activeKeys.d && playerX < 515) playerX += 4;
-
-            // Update Telemetry Metrics Readouts text
-            document.getElementById('p-x').innerText = Math.round(playerX);
-
-            // AABB Proximity Hitbox Collision Mappers (Player tracking targeting coin coordinates)
-            if (coin.active && Math.abs(playerX - coin.x) < 25 && Math.abs((playerY + 50) - coin.y) < 45) {
-                coin.active = false;
-                score += 1;
-                document.getElementById('m-score').innerText = score;
-                setTimeout(respawnCoin, 400); // Deploy replacement target payload
-            }
-
-            // Clear Scene Canvas Window Views
-            ctx.fillStyle = "#020402";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Level Sector Ground Platform Grid Line Strips
-            ctx.fillStyle = "#1f6b33";
-            ctx.fillRect(0, 340, canvas.width, 60);
-            ctx.strokeStyle = "#00ff66";
-            ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(0, 340); ctx.lineTo(canvas.width, 340); ctx.stroke();
-
-            // Render Spinning Cyber Collectible Coin Target
-            if (coin.active) {
-                ctx.fillStyle = "#ffea00";
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = "#ffea00";
-                ctx.beginPath();
-                ctx.arc(coin.x, coin.y, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0; // Clear glowing shadow loops context profile
-            }
-
-            // COMPRESSION PIPELINE: Scale down and draw every piece of the character relative to dynamic PlayerX
+        function drawCharacter(targetX, themeColor, secondaryColor) {
             shapesBlueprint.forEach(shape => {
-                ctx.fillStyle = shape.color;
-                
-                // Calculate scaled coordinate positions matching current vector variables
-                let finalX = playerX + (shape.ox * scaleFactor);
+                if (shape.isArmor) ctx.fillStyle = themeColor;
+                else if (shape.isVisor) ctx.fillStyle = secondaryColor;
+                else if (shape.isVent || shape.isJoint) ctx.fillStyle = "#475569";
+                else if (shape.isDark) ctx.fillStyle = "#0f172a";
+                else if (shape.isBelt) ctx.fillStyle = "#b45309";
+                else if (shape.isBuckle) ctx.fillStyle = "#f59e0b";
+                else if (shape.isHand) ctx.fillStyle = "#64748b";
+
+                let finalX = targetX + (shape.ox * scaleFactor);
                 let finalY = playerY + (shape.oy * scaleFactor);
 
                 if (shape.type === "circle") {
@@ -212,12 +185,62 @@
                     ctx.fillRect(finalX, finalY, shape.w * scaleFactor, shape.h * scaleFactor);
                 }
             });
-
-            requestAnimationFrame(gameLoop);
         }
 
-        // Boot Game Logic Modules Loop Sequence
-        gameLoop();
-    </script>
-</body>
-</html>
+        function gameLoop() {
+            // Player Processing
+            if (playerHP > 0 && cpuHP > 0) {
+                if (activeKeys.a && playerX > 30) playerX -= 4;
+                if (activeKeys.d && playerX < cpuX - 40) playerX += 4; // Prevent walking past CPU
+            }
+
+            // CPU Intelligence Loop (Moves, slides, and targets player)
+            if (playerHP > 0 && cpuHP > 0) {
+                cpuX += 1.5 * cpuDirection;
+                if (cpuX > 550) cpuDirection = -1;
+                if (cpuX < playerX + 60) cpuDirection = 1;
+
+                // Fire AI Weapon System on randomized timers
+                cpuLaserCooldown--;
+                if (cpuLaserCooldown <= 0) {
+                    redLasers.push({ x: cpuX - 30, y: playerY + 25, speed: -6 });
+                    cpuLaserCooldown = Math.floor(Math.random() * 40) + 30; // Cooldown cycles
+                }
+            }
+
+            // Canvas Scene Reset
+            ctx.fillStyle = "#020402";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground Plate Setup
+            ctx.fillStyle = "#1f6b33";
+            ctx.fillRect(0, groundY, canvas.width, 60);
+            ctx.strokeStyle = "#00ff66";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
+
+            // Run Weapon Laser Engine Calculations (Blue)
+            ctx.fillStyle = "#00ffff";
+            blueLasers.forEach((laser, index) => {
+                laser.x += laser.speed;
+                ctx.fillRect(laser.x, laser.y, 15, 4);
+                
+                // Collision check on Enemy Robot hitboxes
+                if (laser.x > cpuX - 20 && laser.x < cpuX + 20 && cpuHP > 0) {
+                    blueLasers.splice(index, 1);
+                    cpuHP = Math.max(0, cpuHP - 10);
+                    if (cpuHP === 0) {
+                        score++;
+                        document.getElementById('m-score').innerText = score;
+                    }
+                }
+                if (laser.x > canvas.width) blueLasers.splice(index, 1);
+            });
+
+            // Run Weapon Laser Engine Calculations (Red)
+            ctx.fillStyle = "#ff3333";
+            redLasers.forEach((laser, index) => {
+                laser.x += laser.speed;
+                ctx.fillRect(laser.x, laser.y, 15, 4);
+
+                // Collision check on Player hitboxes

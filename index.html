@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHAPE COMPOSER</title>
+    <title>SHAPE PLATFORMER</title>
     <style>
         body {
             background-color: #050806;
@@ -19,7 +19,7 @@
             overflow: hidden;
         }
         .header {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-align: center;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -42,7 +42,7 @@
             display: block;
         }
         .matrix-panel {
-            width: 320px;
+            width: 280px;
             background: #040805;
             border: 1px solid #1f6b33;
             padding: 15px;
@@ -50,7 +50,7 @@
             flex-direction: column;
         }
         .panel-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             color: #00ffff;
             border-bottom: 1px solid #1f6b33;
@@ -58,123 +58,166 @@
             margin-bottom: 10px;
             letter-spacing: 1px;
         }
-        .shape-log {
-            flex: 1;
-            overflow-y: auto;
-            font-size: 11px;
+        .telemetry-row {
+            font-size: 12px;
             color: #3fb950;
             text-align: left;
-            white-space: pre-wrap;
-            height: 340px;
+            margin-bottom: 8px;
         }
-        .success { color: #58ff88; }
-        .info { color: #00ffff; }
+        .val { color: #00ffff; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        ⚡ ⚡
+        ⚡ MISSION INTERCEPT // USE A / D TO STEER CHARACTER MODEL ⚡
     </div>
 
     <div class="workspace">
-        <!-- Left: The Visual Display Canvas -->
+        <!-- Main Interactive Game Board Viewport -->
         <div id="canvas-container">
-            <canvas id="render-deck" width="400" height="400"></canvas>
+            <canvas id="game-deck" width="550" height="400"></canvas>
         </div>
 
-        <!-- Right: Real-time Shape Telemetry Matrix Log -->
+        <!-- Telemetry Tracker Readout Windows Panel -->
         <div class="matrix-panel">
-            <div class="panel-title">📊 SHAPE MATRIX</div>
-            <div id="shape-log-box" class="shape-log">Initializing data coordinates...</div>
+            <div class="panel-title">🛰️ ENGINE METRICS LAYER</div>
+            <div class="telemetry-row">SECTOR CORES: <span class="val" id="m-cores">ONLINE</span></div>
+            <div class="telemetry-row">MODEL SCALE: <span class="val">40% (SHRUNK)</span></div>
+            <div class="telemetry-row">PLAYER POS_X: <span class="val" id="p-x">250</span></div>
+            <div class="telemetry-row" style="border-top: 1px dashed #1f6b33; padding-top:8px; margin-top:8px;">
+                TOTAL COINS: <span class="val" style="color:#ffea00;" id="m-score">0</span>
+            </div>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('render-deck');
+        const canvas = document.getElementById('game-deck');
         const ctx = canvas.getContext('2d');
-        const logBox = document.getElementById('shape-log-box');
 
-        // Master Database holding every tiny shape coordinate that forms the character
-        const characterBlueprint = [
-            // HEAD MODULES
-            { name: "Helmet Base", type: "circle", x: 200, y: 90, r: 25, color: "#1e3a8a" },
-            { name: "Visor Frame", type: "rect", x: 185, y: 75, w: 30, h: 12, color: "#00ffff" },
-            { name: "Breather Vent", type: "rect", x: 194, y: 98, w: 12, h: 10, color: "#475569" },
+        // Dynamic State Tracking Vectors
+        let playerX = 250;
+        const playerY = 270; // Positioned firmly onto the green ground deck floor strip
+        const scaleFactor = 0.4; // COMPRESSION METRIC: Shrinks the character asset down to 40% size
+        let score = 0;
+
+        // Collectible Core Coordinate Points Array
+        let coin = { x: 100, y: 310, active: true };
+
+        // Keyboard Register Key Arrays
+        const activeKeys = { a: false, d: false };
+        window.addEventListener('keydown', e => { if(e.key.toLowerCase() in activeKeys) activeKeys[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', e => { if(e.key.toLowerCase() in activeKeys) activeKeys[e.key.toLowerCase()] = false; });
+
+        // Original Unscaled Shape Blueprint Offset Database
+        const shapesBlueprint = [
+            // Head Module (Centered around 200, 90)
+            { type: "circle", ox: 0, oy: 0, r: 25, color: "#1e3a8a" }, // Helmet Base
+            { type: "rect", ox: -15, oy: -15, w: 30, h: 12, color: "#00ffff" }, // Visor
+            { type: "rect", ox: -6, oy: 8, w: 12, h: 10, color: "#475569" }, // Breather
             
-            // TORSO CORE MODULES
-            { name: "Upper Chest Plate", type: "rect", x: 160, y: 125, w: 80, h: 30, color: "#1e40af" },
-            { name: "Abdomen Segment 1", type: "rect", x: 165, y: 160, w: 70, h: 15, color: "#0f172a" },
-            { name: "Abdomen Segment 2", type: "rect", x: 168, y: 180, w: 64, h: 15, color: "#111827" },
-            { name: "Utility Belt Core", type: "rect", x: 162, y: 200, w: 76, h: 12, color: "#b45309" },
-            { name: "Belt Buckle Accent", type: "circle", x: 200, y: 206, r: 5, color: "#f59e0b" },
+            // Torso (Centered around 200, 160)
+            { type: "rect", ox: -40, oy: 35, w: 80, h: 30, color: "#1e40af" }, // Chest
+            { type: "rect", ox: -35, oy: 70, w: 70, h: 15, color: "#0f172a" }, // Abdomen 1
+            { type: "rect", ox: -32, oy: 90, w: 64, h: 15, color: "#111827" }, // Abdomen 2
+            { type: "rect", ox: -38, oy: 110, w: 76, h: 12, color: "#b45309" }, // Belt
+            { type: "circle", ox: 0, oy: 116, r: 5, color: "#f59e0b" }, // Buckle
 
-            // LEFT ARM SUB-MESH
-            { name: "L Shoulder Joint", type: "circle", x: 150, y: 135, r: 10, color: "#334155" },
-            { name: "L Bicep Armor", type: "rect", x: 135, y: 145, w: 14, h: 25, color: "#1d4ed8" },
-            { name: "L Elbow Protector", type: "circle", x: 142, y: 175, r: 6, color: "#475569" },
-            { name: "L Forearm Gauntlet", type: "rect", x: 136, y: 183, w: 12, h: 25, color: "#1e40af" },
-            { name: "L Hand Block", type: "circle", x: 142, y: 212, r: 5, color: "#64748b" },
+            // Left Arm Modules
+            { type: "circle", ox: -50, oy: 45, r: 10, color: "#334155" }, // Shoulder
+            { type: "rect", ox: -65, oy: 55, w: 14, h: 25, color: "#1d4ed8" }, // Bicep
+            { type: "circle", ox: -58, oy: 85, r: 6, color: "#475569" }, // Elbow
+            { type: "rect", ox: -64, oy: 93, w: 12, h: 25, color: "#1e40af" }, // Forearm
+            { type: "circle", ox: -58, oy: 122, r: 5, color: "#64748b" }, // Hand
 
-            // RIGHT ARM SUB-MESH
-            { name: "R Shoulder Joint", type: "circle", x: 250, y: 135, r: 10, color: "#334155" },
-            { name: "R Bicep Armor", type: "rect", x: 251, y: 145, w: 14, h: 25, color: "#1d4ed8" },
-            { name: "R Elbow Protector", type: "circle", x: 258, y: 175, r: 6, color: "#475569" },
-            { name: "R Forearm Gauntlet", type: "rect", x: 252, y: 183, w: 12, h: 25, color: "#1e40af" },
-            { name: "R Hand Block", type: "circle", x: 258, y: 212, r: 5, color: "#64748b" },
+            // Right Arm Modules
+            { type: "circle", ox: 50, oy: 45, r: 10, color: "#334155" }, // Shoulder
+            { type: "rect", ox: 51, oy: 55, w: 14, h: 25, color: "#1d4ed8" }, // Bicep
+            { type: "circle", ox: 58, oy: 85, r: 6, color: "#475569" }, // Elbow
+            { type: "rect", ox: 52, oy: 93, w: 12, h: 25, color: "#1e40af" }, // Forearm
+            { type: "circle", ox: 58, oy: 122, r: 5, color: "#64748b" }, // Hand
 
-            // LEFT LEG SUB-MESH
-            { name: "L Hip Joint Assembly", type: "rect", x: 165, y: 215, w: 28, h: 15, color: "#0f172a" },
-            { name: "L Thigh Guard Plate", type: "rect", x: 168, y: 235, w: 22, h: 35, color: "#1e40af" },
-            { name: "L Knee Cap Guard", type: "circle", x: 179, y: 276, r: 7, color: "#475569" },
-            { name: "L Shin Greave Armor", type: "rect", x: 169, y: 287, w: 20, h: 40, color: "#1d4ed8" },
-            { name: "L Heavy Combat Boot", type: "rect", x: 161, y: 330, w: 28, h: 12, color: "#0f172a" },
+            // Left Leg Modules
+            { type: "rect", ox: -35, oy: 125, w: 28, h: 15, color: "#0f172a" }, // Hip
+            { type: "rect", ox: -32, oy: 145, w: 22, h: 35, color: "#1e40af" }, // Thigh
+            { type: "circle", ox: -21, oy: 186, r: 7, color: "#475569" }, // Knee
+            { type: "rect", ox: -31, oy: 197, w: 20, h: 40, color: "#1d4ed8" }, // Shin
+            { type: "rect", ox: -39, oy: 240, w: 28, h: 12, color: "#0f172a" }, // Boot
 
-            // RIGHT LEG SUB-MESH
-            { name: "R Hip Joint Assembly", type: "rect", x: 207, y: 215, w: 28, h: 15, color: "#0f172a" },
-            { name: "R Thigh Guard Plate", type: "rect", x: 210, y: 235, w: 22, h: 35, color: "#1e40af" },
-            { name: "R Knee Cap Guard", type: "circle", x: 221, y: 276, r: 7, color: "#475569" },
-            { name: "R Shin Greave Armor", type: "rect", x: 211, y: 287, w: 20, h: 40, color: "#1d4ed8" },
-            { name: "R Heavy Combat Boot", type: "rect", x: 211, y: 330, w: 28, h: 12, color: "#0f172a" }
+            // Right Leg Modules
+            { type: "rect", ox: 7, oy: 125, w: 28, h: 15, color: "#0f172a" }, // Hip
+            { type: "rect", ox: 10, oy: 145, w: 22, h: 35, color: "#1e40af" }, // Thigh
+            { type: "circle", ox: 25, oy: 186, r: 7, color: "#475569" }, // Knee
+            { type: "rect", ox: 11, oy: 197, w: 20, h: 40, color: "#1d4ed8" }, // Shin
+            { type: "rect", ox: 11, oy: 240, w: 28, h: 12, color: "#0f172a" } // Boot
         ];
 
-        function renderWorkspace() {
-            // Draw a technical radar grid map background style
-            ctx.fillStyle = "#020503";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.strokeStyle = "rgba(0, 255, 100, 0.08)";
-            ctx.lineWidth = 1;
-            for (let i = 0; i < canvas.width; i += 20) {
-                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
-            }
-
-            logBox.innerHTML = ""; // Reset readout text telemetry window panel block
-
-            // Loop through and stack each individual little geometric node layer
-            characterBlueprint.forEach((shape) => {
-                ctx.fillStyle = shape.color;
-                
-                if (shape.type === "circle") {
-                    ctx.beginPath();
-                    ctx.arc(shape.x, shape.y, shape.r, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Push vector tracking parameters to console view side-deck panel
-                    logBox.innerHTML += `<span class="success">[ARC]</span> ${shape.name.padEnd(20)} => X:${shape.x} Y:${shape.y} R:${shape.r}\n`;
-                } 
-                else if (shape.type === "rect") {
-                    ctx.fillRect(shape.x, shape.y, shape.w, shape.h);
-                    
-                    // Push vector tracking parameters to console view side-deck panel
-                    logBox.innerHTML += `<span class="info">[BOX]</span> ${shape.name.padEnd(20)} => X:${shape.x} Y:${shape.y} W:${shape.w} H:${shape.h}\n`;
-                }
-            });
+        function respawnCoin() {
+            coin.x = Math.floor(Math.random() * 480) + 35;
+            coin.y = Math.floor(Math.random() * 100) + 230; // Spawns directly on reachable running channels
+            coin.active = true;
         }
 
-        // Initialize Render Engine
-        renderWorkspace();
+        function gameLoop() {
+            // Player Motion Intercept Calculators
+            if (activeKeys.a && playerX > 35) playerX -= 4;
+            if (activeKeys.d && playerX < 515) playerX += 4;
+
+            // Update Telemetry Metrics Readouts text
+            document.getElementById('p-x').innerText = Math.round(playerX);
+
+            // AABB Proximity Hitbox Collision Mappers (Player tracking targeting coin coordinates)
+            if (coin.active && Math.abs(playerX - coin.x) < 25 && Math.abs((playerY + 50) - coin.y) < 45) {
+                coin.active = false;
+                score += 1;
+                document.getElementById('m-score').innerText = score;
+                setTimeout(respawnCoin, 400); // Deploy replacement target payload
+            }
+
+            // Clear Scene Canvas Window Views
+            ctx.fillStyle = "#020402";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Level Sector Ground Platform Grid Line Strips
+            ctx.fillStyle = "#1f6b33";
+            ctx.fillRect(0, 340, canvas.width, 60);
+            ctx.strokeStyle = "#00ff66";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, 340); ctx.lineTo(canvas.width, 340); ctx.stroke();
+
+            // Render Spinning Cyber Collectible Coin Target
+            if (coin.active) {
+                ctx.fillStyle = "#ffea00";
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "#ffea00";
+                ctx.beginPath();
+                ctx.arc(coin.x, coin.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0; // Clear glowing shadow loops context profile
+            }
+
+            // COMPRESSION PIPELINE: Scale down and draw every piece of the character relative to dynamic PlayerX
+            shapesBlueprint.forEach(shape => {
+                ctx.fillStyle = shape.color;
+                
+                // Calculate scaled coordinate positions matching current vector variables
+                let finalX = playerX + (shape.ox * scaleFactor);
+                let finalY = playerY + (shape.oy * scaleFactor);
+
+                if (shape.type === "circle") {
+                    ctx.beginPath();
+                    ctx.arc(finalX, finalY, shape.r * scaleFactor, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (shape.type === "rect") {
+                    ctx.fillRect(finalX, finalY, shape.w * scaleFactor, shape.h * scaleFactor);
+                }
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Boot Game Logic Modules Loop Sequence
+        gameLoop();
     </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JET SKY ARENA</title>
+    <title>TITAN STRATEGO COMPANION</title>
     <style>
         body {
             background-color: #050806;
@@ -33,14 +33,33 @@
             border: 2px solid #1f6b33;
             box-shadow: 0 0 35px rgba(0, 255, 100, 0.2);
         }
-        #canvas-container {
-            position: relative;
-            background: #010402;
+        #board {
+            display: grid;
+            grid-template-columns: repeat(10, 40px);
+            grid-template-rows: repeat(10, 40px);
+            gap: 2px;
+            background: #111;
+            padding: 4px;
             border: 1px solid #1f6b33;
         }
-        canvas {
-            display: block;
+        .cell {
+            width: 40px;
+            height: 40px;
+            background: #020402;
+            border: 1px solid #143d1e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
         }
+        .cell:hover { background: #0c1a0f; }
+        .lake { background: #1d4ed8 !important; cursor: not-allowed; }
+        .blue-piece { color: #00ffff; background: #1e3a8a; border-radius: 4px; }
+        .red-piece { color: #ff3333; background: #7f1d1d; border-radius: 4px; }
+        .selected { border: 2px solid #00ff66 !important; background: #143d1e; }
         .matrix-panel {
             width: 280px;
             background: #040805;
@@ -65,190 +84,199 @@
             margin-bottom: 8px;
         }
         .val { color: #00ffff; font-weight: bold; }
-        .danger-val { color: #ff3333; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        ⚡ SKY ARENA // W/A/S/D to Fly Jet • Spacebar to Fire Plasma Cannons ⚡
+        ⚡ STRATEGO DUEL // Click your Blue piece, then click an adjacent square to move ⚡
     </div>
 
     <div class="workspace">
-        <div id="canvas-container">
-            <canvas id="game-deck" width="600" height="400"></canvas>
-        </div>
+        <!-- 10x10 Battlefield Grid System -->
+        <div id="board"></div>
 
+        <!-- System Intelligence Feed Panel -->
         <div class="matrix-panel">
-            <div class="panel-title">🛰️ SKY</div>
-            <div class="telemetry-row">AIRSPACE STATE: <span class="val" id="g-state">ENGAGED</span></div>
-            <div class="telemetry-row">BLUE JET HP: <span class="val" id="h-blue">100/100</span></div>
-            <div class="telemetry-row">RED JET HP: <span class="danger-val" id="h-red">100/100</span></div>
-            <div class="telemetry-row" style="border-top: 1px dashed #1f6b33; padding-top:8px; margin-top:8px;">
-                CONFIRMED KILLS: <span class="val" style="color:#ffea00;" id="m-score">0</span>
+            <div class="panel-title">🛰️ BATTLE LOG CONSOLE</div>
+            <div class="telemetry-row">TURN TRACKER: <span class="val" id="turn-txt">YOUR TURN</span></div>
+            <div class="telemetry-row" style="border-top: 1px dashed #1f6b33; padding-top:8px; margin-top:8px; height: 260px; overflow-y: auto;" id="log-box">
+                [SYSTEM]: Game initialized.<br>Capture the hidden Red Flag (F) to win!
             </div>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('game-deck');
-        const ctx = canvas.getContext('2d');
+        const boardElement = document.getElementById('board');
+        const logBox = document.getElementById('log-box');
+        const turnTxt = document.getElementById('turn-txt');
 
-        // Player Jet Core Vectors (Blue)
-        let playerX = 80;
-        let playerY = 200;
-        let playerHP = 100;
-        let score = 0;
-        let blueLasers = [];
+        let grid = Array(10).fill(null).map(() => Array(10).fill(null));
+        let selectedPiece = null;
+        let isPlayerTurn = true;
 
-        // Simplified Computer Enemy Jet Vectors (Red)
-        let cpuX = 480;
-        let cpuY = 200;
-        let cpuHP = 100;
-        let cpuMoveTimer = 0;
-        let cpuTargetY = 200;
-        let cpuLaserCooldown = 0;
-        let redLasers = [];
+        // Two lakes in the middle of the board where pieces cannot move
+        const lakes = [
+            {r:4, c:2}, {r:4, c:3}, {r:5, c:2}, {r:5, c:3},
+            {r:4, c:6}, {r:4, c:7}, {r:5, c:6}, {r:5, c:7}
+        ];
 
-        // Starfield background matrices for sense of speed
-        let stars = [];
-        for(let i = 0; i < 30; i++) {
-            stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, speed: Math.random() * 3 + 1 });
+        function isLake(r, c) {
+            return lakes.some(l => l.r === r && l.c === c);
         }
 
-        // Input Trackers
-        const activeKeys = { w: false, a: false, s: false, d: false };
-        window.addEventListener('keydown', e => { 
-            let k = e.key.toLowerCase();
-            if(k in activeKeys) activeKeys[k] = true; 
-        });
-        window.addEventListener('keyup', e => { 
-            let k = e.key.toLowerCase();
-            if(k in activeKeys) activeKeys[k] = false; 
-            if(e.key === ' ' && playerHP > 0 && cpuHP > 0) fireBlueLaser();
-        });
-
-        function fireBlueLaser() {
-            blueLasers.push({ x: playerX + 45, y: playerY, speed: 10 });
+        function appendLog(msg) {
+            logBox.innerHTML += `<br>> ${msg}`;
+            logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // Draws a sleek ship model built from mini shapes (triangles and booster blocks)
-        function drawJet(x, y, mainColor, detailColor, isFacingLeft) {
-            ctx.fillStyle = mainColor;
-            let dir = isFacingLeft ? -1 : 1;
-
-            ctx.beginPath();
-            ctx.moveTo(x + (35 * dir), y);         // Nose Cone
-            ctx.lineTo(x - (15 * dir), y - 12);    // Top Fuselage
-            ctx.lineTo(x - (25 * dir), y - 25);    // Top Wing Tip
-            ctx.lineTo(x - (20 * dir), y - 8);     // Inner Wing Top
-            ctx.lineTo(x - (30 * dir), y);         // Engines Thruster
-            ctx.lineTo(x - (20 * dir), y + 8);     // Inner Wing Bottom
-            ctx.lineTo(x - (25 * dir), y + 25);    // Bottom Wing Tip
-            ctx.lineTo(x - (15 * dir), y + 12);    // Bottom Fuselage
-            ctx.closePath();
-            ctx.fill();
-
-            // Cockpit Canopy shape accent
-            ctx.fillStyle = detailColor;
-            ctx.beginPath();
-            ctx.arc(x + (8 * dir), y, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Fire engine backburn sparks animation effects
-            ctx.fillStyle = "#ffaa00";
-            ctx.fillRect(x - (38 * dir), y - 3, 6, 6);
-        }
-
-        function gameLoop() {
-            // Flight Navigation Mechanics Engine (W/A/S/D)
-            if (playerHP > 0 && cpuHP > 0) {
-                if (activeKeys.w && playerY > 30) playerY -= 4;
-                if (activeKeys.s && playerY < canvas.height - 30) playerY += 4;
-                if (activeKeys.a && playerX > 40) playerX -= 4;
-                if (activeKeys.d && playerX < canvas.width / 2) playerX += 4; // Stay on left side hemisphere
-            }
-
-            // Smart Simplified AI Processing Loop
-            if (playerHP > 0 && cpuHP > 0) {
-                cpuMoveTimer--;
-                if(cpuMoveTimer <= 0) {
-                    cpuTargetY = Math.random() * (canvas.height - 100) + 50;
-                    cpuMoveTimer = Math.floor(Math.random() * 30) + 20;
-                }
-                // Smooth glide interpolation towards target coordinate vectors
-                cpuY += (cpuTargetY - cpuY) * 0.08;
-                cpuX += ( (Math.sin(Date.now() / 400) * 40 + 460) - cpuX ) * 0.05;
-
-                // Fire AI Weapon Tracker parameters
-                cpuLaserCooldown--;
-                if (cpuLaserCooldown <= 0) {
-                    redLasers.push({ x: cpuX - 45, y: cpuY, speed: -8 });
-                    cpuLaserCooldown = Math.floor(Math.random() * 35) + 25; 
+        // Setup pieces: B=Bomb, F=Flag, numbers 1-9 are army strengths
+        function initGame() {
+            // Setup Red AI Pieces on rows 0-1 (Hidden values)
+            const redPool = ["F", "B", "B", "1", "2", "3", "4", "5", "8", "9"];
+            let idx = 0;
+            for(let r=0; r<2; r++) {
+                for(let c=0; c<5; c++) {
+                    grid[r][c] = { team: 'red', value: redPool[idx++] };
                 }
             }
 
-            // Wipe view canvas frame clean
-            ctx.fillStyle = "#010402";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Setup Blue Player Pieces on rows 8-9 (Visible values)
+            const bluePool = ["F", "B", "B", "1", "2", "3", "4", "5", "8", "9"];
+            idx = 0;
+            for(let r=8; r<10; r++) {
+                for(let c=0; c<5; c++) {
+                    grid[r][c] = { team: 'blue', value: bluePool[idx++] };
+                }
+            }
 
-            // Draw and drift outer tracking backdrop stars
-            ctx.fillStyle = "rgba(0, 255, 100, 0.4)";
-            stars.forEach(star => {
-                star.x -= star.speed;
-                if(star.x < 0) star.x = canvas.width;
-                ctx.fillRect(star.x, star.y, 2, 2);
-            });
+            renderBoard();
+        }
 
-            // Calculate weapon trajectory matrix loops (Blue lasers)
-            ctx.fillStyle = "#00ffff";
-            blueLasers.forEach((laser, index) => {
-                laser.x += laser.speed;
-                ctx.fillRect(laser.x, laser.y - 2, 20, 4);
-                
-                // Box intercept check on computer jet asset coordinates
-                if (laser.x > cpuX - 25 && laser.x < cpuX + 25 && Math.abs(laser.y - cpuY) < 25 && cpuHP > 0) {
-                    blueLasers.splice(index, 1);
-                    cpuHP = Math.max(0, cpuHP - 10);
-                    if (cpuHP === 0) {
-                        score++;
-                        document.getElementById('m-score').innerText = score;
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            for (let r = 0; r < 10; r++) {
+                for (let c = 0; c < 10; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    if (isLake(r, c)) {
+                        cell.classList.add('lake');
+                    } else {
+                        const piece = grid[r][c];
+                        if (piece) {
+                            if (piece.team === 'blue') {
+                                cell.classList.add('blue-piece');
+                                cell.innerText = piece.value;
+                            } else {
+                                cell.classList.add('red-piece');
+                                cell.innerText = '?'; // AI pieces remain completely hidden
+                            }
+                        }
+                    }
+
+                    if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
+                        cell.classList.add('selected');
+                    }
+
+                    cell.addEventListener('click', () => handleCellClick(r, c));
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(r, c) {
+            if (!isPlayerTurn) return;
+
+            const piece = grid[r][c];
+
+            // Select a blue piece
+            if (piece && piece.team === 'blue') {
+                if (piece.value === 'F' || piece.value === 'B') {
+                    appendLog("Flags and Bombs cannot move!");
+                    return;
+                }
+                selectedPiece = { r, c };
+                renderBoard();
+                return;
+            }
+
+            // If a piece is already selected, try to move it to the clicked cell
+            if (selectedPiece) {
+                const dr = Math.abs(r - selectedPiece.r);
+                const dc = Math.abs(c - selectedPiece.c);
+
+                // Move rule check: Must be exactly 1 block away sideways or vertically
+                if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
+                    if (isLake(r, c)) return;
+
+                    const movingPiece = grid[selectedPiece.r][selectedPiece.c];
+                    
+                    if (!piece) {
+                        // Move to empty space
+                        grid[r][c] = movingPiece;
+                        grid[selectedPiece.r][selectedPiece.c] = null;
+                        appendLog(`Moved piece to square [${r}, ${c}]`);
+                        selectedPiece = null;
+                        endTurn();
+                    } else if (piece.team === 'red') {
+                        // Battle Engagement Rule Processors
+                        handleBattle(selectedPiece.r, selectedPiece.c, r, c);
+                        selectedPiece = null;
+                        endTurn();
                     }
                 }
-                if (laser.x > canvas.width) blueLasers.splice(index, 1);
-            });
+            }
+        }
 
-            // Calculate weapon trajectory matrix loops (Red lasers)
-            ctx.fillStyle = "#ff3333";
-            redLasers.forEach((laser, index) => {
-                laser.x += laser.speed;
-                ctx.fillRect(laser.x, laser.y - 2, 20, 4);
+        function handleBattle(pRow, pCol, eRow, eCol) {
+            const blue = grid[pRow][pCol];
+            const red = grid[eRow][eCol];
 
-                // Box intercept check on user jet asset coordinates
-                if (laser.x > playerX - 25 && laser.x < playerX + 25 && Math.abs(laser.y - playerY) < 25 && playerHP > 0) {
-                    redLasers.splice(index, 1);
-                    playerHP = Math.max(0, playerHP - 10);
-                }
-                if (laser.x < 0) redLasers.splice(index, 1);
-            });
+            appendLog(`ENGAGEMENT! Blue ${blue.value} vs Red ${red.value}`);
 
-            // Render both high-performance craft models to interface
-            if (playerHP > 0) drawJet(playerX, playerY, "#1e40af", "#00ffff", false); // Blue Interceptor
-            if (cpuHP > 0) drawJet(cpuX, cpuY, "#991b1b", "#ff3333", true); // Red Computer Target
+            if (red.value === 'F') {
+                appendLog("VICTORY! You captured the Enemy Flag!");
+                grid[eRow][eCol] = blue;
+                grid[pRow][pCol] = null;
+                isPlayerTurn = false;
+                turnTxt.innerText = "YOU WIN!";
+                renderBoard();
+                return;
+            }
 
-            // Broadcast data states directly out to panel labels
-            document.getElementById('h-blue').innerText = `${playerHP}/100`;
-            document.getElementById('h-red').innerText = `${cpuHP}/100`;
+            if (red.value === 'B') {
+                appendLog("EXPLOSION! Blue hit a Bomb and died.");
+                grid[pRow][pCol] = null;
+                renderBoard();
+                return;
+            }
 
-            // Terminal End State Check Overlays
-            if (playerHP === 0 || cpuHP === 0) {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.font = "20px 'Courier New'";
-                ctx.textAlign = "center";
-                
-                if (cpuHP === 0) {
-                    ctx.fillStyle = "#00ff66";
-                    ctx.fillText("VICTORY: AIRSPACE CLEANSED", canvas.width / 2, canvas.height / 2 - 10);
-                } else {
-                    ctx.fillStyle = "#ff3333";
+            // Basic number rank comparisons
+            const bRank = parseInt(blue.value);
+            const rRank = parseInt(red.value);
+
+            if (bRank > rRank) {
+                appendLog(`Blue wins! Red ${red.value} destroyed.`);
+                grid[eRow][eCol] = blue;
+                grid[pRow][pCol] = null;
+            } else if (bRank < rRank) {
+                appendLog(`Red wins! Blue ${blue.value} destroyed.`);
+                grid[pRow][pCol] = null;
+            } else {
+                appendLog("Tie score! Both assets destroyed.");
+                grid[pRow][pCol] = null;
+                grid[eRow][eCol] = null;
+            }
+            renderBoard();
+        }
+
+        function endTurn() {
+            isPlayerTurn = false;
+            turnTxt.innerText = "COMPUTER TURN";
+            setTimeout(runComputerAI, 1000);
+        }
+
+        // Basic AI tracking logic loop

@@ -3,269 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COMPLETE OS</title>
-    <link rel="dns-prefetch" href="https://8.8.8">
-    <link rel="dns-prefetch" href="https://1.1.1">
-    <link rel="preconnect" href="https://1.1.1" crossorigin>
+    <title>ENGINE</title>
     <style>
-        body { 
-            font-family: 'Courier New', Courier, monospace; 
-            background-color: #030704; 
-            color: #3fb950; 
-            text-align: center; 
-            padding: 20px; 
-            margin: 0;
-            background-image: linear-gradient(rgba(16, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), 
-                              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            background-size: 100% 4px, 6px 100%;
-        } 
-        .container { 
-            max-width: 850px; 
-            margin: 0 auto; 
-            background: #070f0a; 
-            padding: 25px; 
-            border: 1px solid #1f6b33; 
-            box-shadow: 0 0 30px rgba(0, 255, 100, 0.15), inset 0 0 15px rgba(0,0,0,0.9);
-            position: relative;
-        } 
-        .corner-tag {
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            font-size: 10px;
-            color: #1f6b33;
-            letter-spacing: 2px;
-        }
-        h1 { 
-            margin-top: 5px; 
-            color: #58ff88; 
-            font-size: 28px; 
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            text-shadow: 0 0 8px rgba(88, 255, 136, 0.6);
-        } 
-        .subtitle {
-            margin: -5px 0 20px 0; 
-            font-size: 11px; 
-            color: #1f6b33;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-        }
-        .hud-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        .hud-card {
-            background: #040906;
-            border: 1px solid #1f6b33;
-            padding: 10px;
-            text-align: left;
-        }
-        .hud-label {
-            font-size: 10px;
-            color: #1f6b33;
-            text-transform: uppercase;
-        }
-        .status { font-size: 14px; color: #58ff88; font-weight: bold; } 
-        .latency-badge { font-size: 16px; color: #00ffff; font-weight: bold; } 
-        .terminal-box {
-            background: #020402; 
-            border: 1px solid #1f6b33; 
-            padding: 15px;
-            text-align: left;
-        }
-        .log-container { 
-            height: 280px; 
-            overflow-y: auto; 
-            font-size: 12px; 
-            color: #3fb950;
-            margin-bottom: 10px;
-            white-space: pre-wrap;
-        } 
-        .input-line {
-            display: flex;
-            align-items: center;
-            font-size: 12px;
-            color: #58ff88;
-            border-top: 1px solid #1f6b33;
-            padding-top: 10px;
-        }
-        .prompt-label { margin-right: 5px; color: #58ff88; }
-        .cmd-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #00ffff;
-            font-family: inherit;
-            font-size: inherit;
-            outline: none;
-        }
-        .app-window {
-            background: #020503;
-            border: 2px solid #00ffff;
-            margin-top: 20px;
-            padding: 15px;
-            text-align: left;
-            display: none;
-        }
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #00ffff;
-            padding-bottom: 5px;
-            margin-bottom: 12px;
-            font-weight: bold;
-            color: #00ffff;
-            font-size: 12px;
-        }
-        .close-btn { color: #ff3333; cursor: pointer; font-weight: bold; }
-        .editor-textarea {
-            width: 100%;
-            height: 180px;
-            background: #050a06;
-            border: 1px solid #1f6b33;
+        body {
+            background-color: #020205;
             color: #00ff66;
             font-family: 'Courier New', monospace;
-            font-size: 13px;
-            outline: none;
-            padding: 10px;
-            box-sizing: border-box;
-            resize: none;
-        }
-        .editor-actions {
-            margin-top: 10px;
+            margin: 0;
+            padding: 0;
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
         }
-        .action-btn {
-            background: #00ffff;
-            border: none;
+        #game-container {
+            position: relative;
+            border: 4px solid #1f6b33;
+            box-shadow: 0 0 30px rgba(0, 255, 100, 0.3);
+        }
+        canvas {
+            display: block;
+            background: #000;
+        }
+        #hud {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(7, 15, 10, 0.85);
+            border-top: 2px solid #1f6b33;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .hud-val { color: #00ffff; }
+        #overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0,0,0,0.85);
+            padding: 20px;
+            border: 1px solid #00ff66;
+            display: block;
+        }
+        button {
+            background: #00ff66;
             color: #000;
-            padding: 6px 15px;
+            border: none;
+            padding: 10px 20px;
             font-family: inherit;
             font-weight: bold;
             cursor: pointer;
+            margin-top: 15px;
         }
-        .success { color: #58ff88; } 
-        .info { color: #00ffff; } 
-        .fail { color: #ff3333; font-weight: bold; } 
+        button:hover { background: #00ffff; }
     </style>
 </head>
 <body>
-    <div class="container"> 
-        <div class="corner-tag">IDE_KERNEL_LOADED_v7.0</div>
-        <h1>Titan OS Mainframe</h1> 
-        <div class="subtitle">// Persistent Machine Framework //</div> 
+
+    <div style="margin-bottom: 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">
+        ⚡ TITAN ENGINE v8.0 // WASD to Move • Left/Right Arrows to Look • Space to Shoot ⚡
+    </div>
+
+    <div id="game-container">
+        <canvas id="view" width="640" height="400"></canvas>
         
-        <div class="hud-grid">
-            <div class="hud-card">
-                <div class="hud-label">📡 Machine State</div>
-                <div class="status" id="status-text">ONLINE</div> 
-            </div>
-            <div class="hud-card">
-                <div class="hud-label">⚡ Loop Speed</div>
-                <div class="latency-badge" id="latency-text">-- MS</div> 
-            </div>
-            <div class="hud-card">
-                <div class="hud-label">📁 Virtual Disk</div>
-                <div class="latency-badge" id="directory-text" style="color: #ffbc00; font-size: 14px;">/root</div> 
-            </div>
-        </div>
-        
-        <div class="terminal-box">
-            <div class="log-container" id="log-box"></div> 
-            <div class="input-line">
-                <span class="prompt-label" id="prompt-display">user@titan:/root$</span>
-                <input type="text" id="cmd-field" class="cmd-input" placeholder="Type help to view hardware options..." autocomplete="off" autofocus>
-            </div>
+        <!-- Live HUD readouts linked to permanent memory storage -->
+        <div id="hud">
+            <div>SCORE: <span id="hud-score" class="hud-val">0</span></div>
+            <div>HI-SCORE: <span id="hud-hiscore" class="hud-val">0</span></div>
+            <div>AMMO: <span id="hud-ammo" class="hud-val">30</span></div>
         </div>
 
-        <div id="app-sandbox" class="app-window">
-            <div class="app-header">
-                <span id="app-title">IDE Application Workbench</span>
-                <span class="close-btn" onclick="closeApp()">[X] EXIT DECK</span>
-            </div>
-            <div id="app-body"></div>
+        <!-- Initial Start & Respawn State Screen -->
+        <div id="overlay">
+            <h2 style="margin: 0; color: #fff; letter-spacing: 3px;">TITAN-3D KERNEL OS</h2>
+            <p style="font-size: 12px; color: #888;">Procedural Raycaster Engine Initialized Successfully.</p>
+            <button onclick="bootGame()">INITIALIZE SYSTEM ENGAGEMENT</button>
         </div>
-    </div> 
+    </div>
 
-    <script> 
-        const logBox = document.getElementById('log-box'); 
-        const statusText = document.getElementById('status-text'); 
-        const latencyText = document.getElementById('latency-text'); 
-        const directoryText = document.getElementById('directory-text'); 
-        const promptDisplay = document.getElementById('prompt-display'); 
-        const cmdField = document.getElementById('cmd-field');
-        const appSandbox = document.getElementById('app-sandbox');
-        const appBody = document.getElementById('app-body');
-        const appTitle = document.getElementById('app-title');
+    <script>
+        const canvas = document.getElementById('view');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
 
-        if (!localStorage.getItem('titan_fs')) {
-            const initialFS = {
-                "root": {
-                    "script.js": "return 50 * 50;",
-                    "readme.txt": "Titan OS v7.0 Mainframe initialized.\nType 'edit [filename]' to save persistent scripts."
+        // Web Audio Synthesizer Hook
+        let audioCtx = null;
+        function playLaserSound(freq, duration, type) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type || 'sawtooth';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // Hard Drive Persistent Memory Matrix
+        if (!localStorage.getItem('caster_hiscore')) {
+            localStorage.setItem('caster_hiscore', '0');
+        }
+        let hiScore = parseInt(localStorage.getItem('caster_hiscore'));
+        document.getElementById('hud-hiscore').innerText = hiScore;
+
+        // Map Definition (1 = Outer Walls, 2 = Tech Columns, 0 = Empty Corridor Paths)
+        const mapWidth = 16, mapHeight = 16;
+        const map = [
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
+            1,0,1,1,0,0,1,0,2,2,2,0,1,1,0,1,
+            1,0,1,0,0,0,0,0,2,0,2,0,0,1,0,1,
+            1,0,1,0,1,1,1,0,2,0,2,2,0,1,0,1,
+            1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,1,
+            1,1,1,0,1,0,1,1,1,0,0,2,2,1,1,1,
+            1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,
+            1,0,2,2,2,2,0,0,1,1,1,0,1,1,0,1,
+            1,0,2,0,0,2,0,0,0,0,1,0,1,0,0,1,
+            1,0,2,0,0,2,0,1,1,0,1,0,1,1,0,1,
+            1,0,2,2,0,2,0,1,0,0,0,0,0,1,0,1,
+            1,0,0,0,0,0,0,1,0,2,2,2,0,1,0,1,
+            1,0,1,1,1,1,1,1,0,2,0,0,0,0,0,1,
+            1,0,0,0,0,0,0,0,0,2,0,2,2,2,0,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+        ];
+
+        // Player Attributes
+        let posX = 2.5, posY = 2.5; 
+        let dirX = 1.0, dirY = 0.0; 
+        let planeX = 0.0, planeY = 0.66; 
+
+        // Gameplay Track States
+        let score = 0, ammo = 30, gameRunning = false;
+        let targets = [];
+
+        // Procedural Target Generation Allocation Pipeline
+        function spawnTarget() {
+            let rx, ry;
+            do {
+                rx = Math.floor(Math.random() * (mapWidth - 2)) + 1.5;
+                ry = Math.floor(Math.random() * (mapHeight - 2)) + 1.5;
+            } while (map[Math.floor(ry) * mapWidth + Math.floor(rx)] !== 0);
+            targets.push({ x: rx, y: ry, active: true });
+        }
+
+        // Active Register Movement Vectors
+        const keys = { w: false, s: false, a: false, d: false, ArrowLeft: false, ArrowRight: false };
+        window.addEventListener('keydown', e => { if (e.key in keys) keys[e.key] = true; });
+        window.addEventListener('keyup', e => { 
+            if (e.key in keys) keys[e.key] = false;
+            if (e.key === ' ' && gameRunning) shootWeapon();
+        });
+
+        function bootGame() {
+            overlay.style.display = 'none';
+            score = 0; ammo = 30; targets = [];
+            posX = 2.5; posY = 2.5; dirX = 1.0; dirY = 0.0; planeX = 0.0; planeY = 0.66;
+            document.getElementById('hud-score').innerText = score;
+            document.getElementById('hud-ammo').innerText = ammo;
+            for(let i=0; i<3; i++) spawnTarget();
+            gameRunning = true;
+            playLaserSound(150, 0.4, 'sine');
+            requestAnimationFrame(gameLoop);
+        }
+
+        function shootWeapon() {
+            if (ammo <= 0) { playLaserSound(80, 0.1, 'square'); return; }
+            ammo--;
+            document.getElementById('hud-ammo').innerText = ammo;
+            playLaserSound(880, 0.15, 'sawtooth');
+
+            // Raycast line of sight calculations targeting active coordinate nodes
+            targets.forEach(target => {
+                if (!target.active) return;
+                let tVecX = target.x - posX;
+                let tVecY = target.y - posY;
+                let angleToTarget = Math.atan2(tVecY, tVecX);
+                let playerAngle = Math.atan2(dirY, dirX);
+                let diff = angleToTarget - playerAngle;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+
+                if (Math.abs(diff) < 0.15) { // Hitbox clearance check margin
+                    target.active = false;
+                    score += 100;
+                    document.getElementById('hud-score').innerText = score;
+                    playLaserSound(400, 0.3, 'triangle');
+                    if (score > hiScore) {
+                        hiScore = score;
+                        localStorage.setItem('caster_hiscore', hiScore.toString());
+                        document.getElementById('hud-hiscore').innerText = hiScore;
+                    }
+                    setTimeout(() => {
+                        targets = targets.filter(t => t.active);
+                        spawnTarget();
+                    }, 1000);
                 }
-            };
-            localStorage.setItem('titan_fs', JSON.stringify(initialFS));
+            });
         }
 
-        let fileSystem = JSON.parse(localStorage.getItem('titan_fs'));
-        let currentPath = "root";
-        let activeEditingFile = null;
+        function updateMovement() {
+            const moveSpeed = 0.05;
+            const rotSpeed = 0.04;
 
-        function saveFS() {
-            localStorage.setItem('titan_fs', JSON.stringify(fileSystem));
-        }
-
-        function appendLog(message, type) { 
-            const logEntry = document.createElement('div'); 
-            logEntry.className = type || ''; 
-            logEntry.innerHTML = message; 
-            logBox.appendChild(logEntry); 
-            logBox.scrollTop = logBox.scrollHeight; 
-        } 
-
-        function closeApp() {
-            appSandbox.style.display = "none";
-            appBody.innerHTML = "";
-            activeEditingFile = null;
-        }
-
-        function saveEditorContent() {
-            const txt = document.getElementById('editor-area').value;
-            if (activeEditingFile) {
-                fileSystem[currentPath][activeEditingFile] = txt;
-                saveFS();
-                appendLog(`Changes successfully compiled to disk workspace: ${activeEditingFile}`, 'success');
-                closeApp();
+            if (keys.w) {
+                if (map[Math.floor(posY) * mapWidth + Math.floor(posX + dirX * moveSpeed)] === 0) posX += dirX * moveSpeed;
+                if (map[Math.floor(posY + dirY * moveSpeed) * mapWidth + Math.floor(posX)] === 0) posY += dirY * moveSpeed;
             }
-        }
+            if (keys.s) {
+                if (map[Math.floor(posY) * mapWidth + Math.floor(posX - dirX * moveSpeed)] === 0) posX -= dirX * moveSpeed;
+                if (map[Math.floor(posY - dirY * moveSpeed) * mapWidth + Math.floor(posX)] === 0) posY -= dirY * moveSpeed;
+            }
+            if (keys.d) { // Strafe Right Execution
+                if (map[Math.floor(posY) * mapWidth + Math.floor(posX - dirY * moveSpeed)] === 0) posX -= dirY * moveSpeed;
+                if (map[Math.floor(posY + dirX * moveSpeed) * mapWidth + Math.floor(posX)] === 0) posY += dirX * moveSpeed;
+            }
+            if (keys.a) { // Strafe Left Execution
+                if (map[Math.floor(posY) * mapWidth + Math.floor(posX + dirY * moveSpeed)] === 0) posX += dirY * moveSpeed;
+                if (map[Math.floor(posY - dirX * moveSpeed) * mapWidth + Math.floor(posX)] === 0) posY -= dirX * moveSpeed;
+            }
 
-        cmdField.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const fullInput = this.value.trim();
-                if (!fullInput) return;
-                
-                appendLog(`[INPUT] user@titan:/${currentPath}$ ${fullInput}`, 'info');
-                this.value = ''; 
-
-                const parts = fullInput.split(" ");
-                const command = parts[0].toLowerCase();
-                const args = parts.slice(1).join(" ");
-
-                switch(command) {
-                    case 'help':
-                        appendLog("AVAILABLE CODE DECK PIPELINES:\n > ls              - Audit directories\n > edit [filename] - Open IDE code screen overlay\n > cat [filename]  - Stream out file contents\n > run [filename]  - Compile and execute script file code\n > rm [filename]   - Scrub file blocks from memory\n > clear           - Flush terminal output logs", "info");
-                        break;
-                    case 'ls':
-                        let targetNode = fileSystem[currentPath];
-                        let elements = [];
-                        for(let key in targetNode) {
-                            elements.push(`<span>${key}</span>`);
-                        }
-                        appendLog(elements.length ? elements.join("   ") : "Sector empty.", "success");
-                        break;
-                    case 'edit':
+            // Rotate view vectors right or left
+            if (keys.ArrowRight) {
+                let oldDirX = dirX;
+                dirX = dirX * Math.cos(-rotSpeed) - dirY * Math.sin(-rotSpeed);
+                dirY = oldDirX * Math.sin(-rotSpeed) + dirY * Math.cos(-rotSpeed);

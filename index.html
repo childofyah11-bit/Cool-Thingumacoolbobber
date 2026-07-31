@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER ARENA</title>
+    <title>JET SKY ARENA</title>
     <style>
         body {
             background-color: #050806;
@@ -35,7 +35,7 @@
         }
         #canvas-container {
             position: relative;
-            background: #020402;
+            background: #010402;
             border: 1px solid #1f6b33;
         }
         canvas {
@@ -71,7 +71,7 @@
 <body>
 
     <div class="header">
-        ⚡ CYBER DUEL // A / D to Move • Spacebar to Fire Laser Blaster ⚡
+        ⚡ SKY ARENA // W/A/S/D to Fly Jet • Spacebar to Fire Plasma Cannons ⚡
     </div>
 
     <div class="workspace">
@@ -80,12 +80,12 @@
         </div>
 
         <div class="matrix-panel">
-            <div class="panel-title">🛰️ ARENA </div>
-            <div class="telemetry-row">ARENA STATE: <span class="val" id="g-state">ENGAGED</span></div>
-            <div class="telemetry-row">BLUE HP: <span class="val" id="h-blue">100/100</span></div>
-            <div class="telemetry-row">RED HP: <span class="danger-val" id="h-red">100/100</span></div>
+            <div class="panel-title">🛰️ SKY</div>
+            <div class="telemetry-row">AIRSPACE STATE: <span class="val" id="g-state">ENGAGED</span></div>
+            <div class="telemetry-row">BLUE JET HP: <span class="val" id="h-blue">100/100</span></div>
+            <div class="telemetry-row">RED JET HP: <span class="danger-val" id="h-red">100/100</span></div>
             <div class="telemetry-row" style="border-top: 1px dashed #1f6b33; padding-top:8px; margin-top:8px;">
-                TOTAL WINS: <span class="val" style="color:#ffea00;" id="m-score">0</span>
+                CONFIRMED KILLS: <span class="val" style="color:#ffea00;" id="m-score">0</span>
             </div>
         </div>
     </div>
@@ -94,138 +94,120 @@
         const canvas = document.getElementById('game-deck');
         const ctx = canvas.getContext('2d');
 
-        // Scaling parameters
-        const scaleFactor = 0.4;
-        const groundY = 340;
-        const playerY = 270;
-
-        // Player States (Blue)
-        let playerX = 100;
+        // Player Jet Core Vectors (Blue)
+        let playerX = 80;
+        let playerY = 200;
         let playerHP = 100;
         let score = 0;
         let blueLasers = [];
 
-        // Simplified CPU Target States (Red)
-        let cpuX = 450;
+        // Simplified Computer Enemy Jet Vectors (Red)
+        let cpuX = 480;
+        let cpuY = 200;
         let cpuHP = 100;
-        let cpuDirection = -1;
+        let cpuMoveTimer = 0;
+        let cpuTargetY = 200;
         let cpuLaserCooldown = 0;
         let redLasers = [];
 
-        // Input Arrays
-        const activeKeys = { a: false, d: false };
+        // Starfield background matrices for sense of speed
+        let stars = [];
+        for(let i = 0; i < 30; i++) {
+            stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, speed: Math.random() * 3 + 1 });
+        }
+
+        // Input Trackers
+        const activeKeys = { w: false, a: false, s: false, d: false };
         window.addEventListener('keydown', e => { 
-            if(e.key.toLowerCase() in activeKeys) activeKeys[e.key.toLowerCase()] = true; 
+            let k = e.key.toLowerCase();
+            if(k in activeKeys) activeKeys[k] = true; 
         });
         window.addEventListener('keyup', e => { 
-            if(e.key.toLowerCase() in activeKeys) activeKeys[e.key.toLowerCase()] = false; 
+            let k = e.key.toLowerCase();
+            if(k in activeKeys) activeKeys[k] = false; 
             if(e.key === ' ' && playerHP > 0 && cpuHP > 0) fireBlueLaser();
         });
 
-        // The geometric human sub-mesh structure blueprint layout
-        const shapesBlueprint = [
-            // Head Module
-            { type: "circle", ox: 0, oy: 0, r: 25, isArmor: true }, 
-            { type: "rect", ox: -15, oy: -15, w: 30, h: 12, isVisor: true }, 
-            { type: "rect", ox: -6, oy: 8, w: 12, h: 10, isVent: true }, 
-            // Torso
-            { type: "rect", ox: -40, oy: 35, w: 80, h: 30, isArmor: true }, 
-            { type: "rect", ox: -35, oy: 70, w: 70, h: 15, isDark: true }, 
-            { type: "rect", ox: -32, oy: 90, w: 64, h: 15, isDark: true }, 
-            { type: "rect", ox: -38, oy: 110, w: 76, h: 12, isBelt: true }, 
-            { type: "circle", ox: 0, oy: 116, r: 5, isBuckle: true }, 
-            // Left Arm
-            { type: "circle", ox: -50, oy: 45, r: 10, isJoint: true }, 
-            { type: "rect", ox: -65, oy: 55, w: 14, h: 25, isArmor: true }, 
-            { type: "circle", ox: -58, oy: 85, r: 6, isJoint: true }, 
-            { type: "rect", ox: -64, oy: 93, w: 12, h: 25, isArmor: true }, 
-            { type: "circle", ox: -58, oy: 122, r: 5, isHand: true }, 
-            // Right Arm
-            { type: "circle", ox: 50, oy: 45, r: 10, isJoint: true }, 
-            { type: "rect", ox: 51, oy: 55, w: 14, h: 25, isArmor: true }, 
-            { type: "circle", ox: 58, oy: 85, r: 6, isJoint: true }, 
-            { type: "rect", ox: 52, oy: 93, w: 12, h: 25, isArmor: true }, 
-            { type: "circle", ox: 58, oy: 122, r: 5, isHand: true }, 
-            // Left Leg
-            { type: "rect", ox: -35, oy: 125, w: 28, h: 15, isDark: true }, 
-            { type: "rect", ox: -32, oy: 145, w: 22, h: 35, isArmor: true }, 
-            { type: "circle", ox: -21, oy: 186, r: 7, isJoint: true }, 
-            { type: "rect", ox: -31, oy: 197, w: 20, h: 40, isArmor: true }, 
-            { type: "rect", ox: -39, oy: 240, w: 28, h: 12, isDark: true }, 
-            // Right Leg
-            { type: "rect", ox: 7, oy: 125, w: 28, h: 15, isDark: true }, 
-            { type: "rect", ox: 10, oy: 145, w: 22, h: 35, isArmor: true }, 
-            { type: "circle", ox: 21, oy: 186, r: 7, isJoint: true }, 
-            { type: "rect", ox: 11, oy: 197, w: 20, h: 40, isArmor: true }, 
-            { type: "rect", ox: 11, oy: 240, w: 28, h: 12, isDark: true }
-        ];
-
         function fireBlueLaser() {
-            blueLasers.push({ x: playerX + 30, y: playerY + 25, speed: 8 });
+            blueLasers.push({ x: playerX + 45, y: playerY, speed: 10 });
         }
 
-        function drawCharacter(targetX, themeColor, secondaryColor) {
-            shapesBlueprint.forEach(shape => {
-                if (shape.isArmor) ctx.fillStyle = themeColor;
-                else if (shape.isVisor) ctx.fillStyle = secondaryColor;
-                else if (shape.isVent || shape.isJoint) ctx.fillStyle = "#475569";
-                else if (shape.isDark) ctx.fillStyle = "#0f172a";
-                else if (shape.isBelt) ctx.fillStyle = "#b45309";
-                else if (shape.isBuckle) ctx.fillStyle = "#f59e0b";
-                else if (shape.isHand) ctx.fillStyle = "#64748b";
+        // Draws a sleek ship model built from mini shapes (triangles and booster blocks)
+        function drawJet(x, y, mainColor, detailColor, isFacingLeft) {
+            ctx.fillStyle = mainColor;
+            let dir = isFacingLeft ? -1 : 1;
 
-                let finalX = targetX + (shape.ox * scaleFactor);
-                let finalY = playerY + (shape.oy * scaleFactor);
+            ctx.beginPath();
+            ctx.moveTo(x + (35 * dir), y);         // Nose Cone
+            ctx.lineTo(x - (15 * dir), y - 12);    // Top Fuselage
+            ctx.lineTo(x - (25 * dir), y - 25);    // Top Wing Tip
+            ctx.lineTo(x - (20 * dir), y - 8);     // Inner Wing Top
+            ctx.lineTo(x - (30 * dir), y);         // Engines Thruster
+            ctx.lineTo(x - (20 * dir), y + 8);     // Inner Wing Bottom
+            ctx.lineTo(x - (25 * dir), y + 25);    // Bottom Wing Tip
+            ctx.lineTo(x - (15 * dir), y + 12);    // Bottom Fuselage
+            ctx.closePath();
+            ctx.fill();
 
-                if (shape.type === "circle") {
-                    ctx.beginPath();
-                    ctx.arc(finalX, finalY, shape.r * scaleFactor, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (shape.type === "rect") {
-                    ctx.fillRect(finalX, finalY, shape.w * scaleFactor, shape.h * scaleFactor);
-                }
-            });
+            // Cockpit Canopy shape accent
+            ctx.fillStyle = detailColor;
+            ctx.beginPath();
+            ctx.arc(x + (8 * dir), y, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Fire engine backburn sparks animation effects
+            ctx.fillStyle = "#ffaa00";
+            ctx.fillRect(x - (38 * dir), y - 3, 6, 6);
         }
 
         function gameLoop() {
-            // Player Motion Inputs
+            // Flight Navigation Mechanics Engine (W/A/S/D)
             if (playerHP > 0 && cpuHP > 0) {
-                if (activeKeys.a && playerX > 30) playerX -= 4;
-                if (activeKeys.d && playerX < cpuX - 40) playerX += 4; 
+                if (activeKeys.w && playerY > 30) playerY -= 4;
+                if (activeKeys.s && playerY < canvas.height - 30) playerY += 4;
+                if (activeKeys.a && playerX > 40) playerX -= 4;
+                if (activeKeys.d && playerX < canvas.width / 2) playerX += 4; // Stay on left side hemisphere
             }
 
-            // Simplified Target CPU Movement Loop
+            // Smart Simplified AI Processing Loop
             if (playerHP > 0 && cpuHP > 0) {
-                cpuX += 2 * cpuDirection;
-                if (cpuX > 550) cpuDirection = -1;
-                if (cpuX < playerX + 60) cpuDirection = 1;
+                cpuMoveTimer--;
+                if(cpuMoveTimer <= 0) {
+                    cpuTargetY = Math.random() * (canvas.height - 100) + 50;
+                    cpuMoveTimer = Math.floor(Math.random() * 30) + 20;
+                }
+                // Smooth glide interpolation towards target coordinate vectors
+                cpuY += (cpuTargetY - cpuY) * 0.08;
+                cpuX += ( (Math.sin(Date.now() / 400) * 40 + 460) - cpuX ) * 0.05;
 
-                // Streamlined Projectile Timer
+                // Fire AI Weapon Tracker parameters
                 cpuLaserCooldown--;
                 if (cpuLaserCooldown <= 0) {
-                    redLasers.push({ x: cpuX - 30, y: playerY + 25, speed: -6 });
-                    cpuLaserCooldown = Math.floor(Math.random() * 50) + 40; 
+                    redLasers.push({ x: cpuX - 45, y: cpuY, speed: -8 });
+                    cpuLaserCooldown = Math.floor(Math.random() * 35) + 25; 
                 }
             }
 
-            // Reset Scene Viewport
-            ctx.fillStyle = "#020402";
+            // Wipe view canvas frame clean
+            ctx.fillStyle = "#010402";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Solid Floor Layer Strip
-            ctx.fillStyle = "#1f6b33";
-            ctx.fillRect(0, groundY, canvas.width, 60);
-            ctx.strokeStyle = "#00ff66";
-            ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
+            // Draw and drift outer tracking backdrop stars
+            ctx.fillStyle = "rgba(0, 255, 100, 0.4)";
+            stars.forEach(star => {
+                star.x -= star.speed;
+                if(star.x < 0) star.x = canvas.width;
+                ctx.fillRect(star.x, star.y, 2, 2);
+            });
 
-            // Handle Laser Travel & Impacts (Blue Player)
+            // Calculate weapon trajectory matrix loops (Blue lasers)
             ctx.fillStyle = "#00ffff";
             blueLasers.forEach((laser, index) => {
                 laser.x += laser.speed;
-                ctx.fillRect(laser.x, laser.y, 15, 4);
+                ctx.fillRect(laser.x, laser.y - 2, 20, 4);
                 
-                if (laser.x > cpuX - 25 && laser.x < cpuX + 25 && cpuHP > 0) {
+                // Box intercept check on computer jet asset coordinates
+                if (laser.x > cpuX - 25 && laser.x < cpuX + 25 && Math.abs(laser.y - cpuY) < 25 && cpuHP > 0) {
                     blueLasers.splice(index, 1);
                     cpuHP = Math.max(0, cpuHP - 10);
                     if (cpuHP === 0) {
@@ -236,13 +218,37 @@
                 if (laser.x > canvas.width) blueLasers.splice(index, 1);
             });
 
-            // Handle Laser Travel & Impacts (Red CPU)
+            // Calculate weapon trajectory matrix loops (Red lasers)
             ctx.fillStyle = "#ff3333";
             redLasers.forEach((laser, index) => {
                 laser.x += laser.speed;
-                ctx.fillRect(laser.x, laser.y, 15, 4);
+                ctx.fillRect(laser.x, laser.y - 2, 20, 4);
 
-                if (laser.x > playerX - 25 && laser.x < playerX + 25 && playerHP > 0) {
+                // Box intercept check on user jet asset coordinates
+                if (laser.x > playerX - 25 && laser.x < playerX + 25 && Math.abs(laser.y - playerY) < 25 && playerHP > 0) {
                     redLasers.splice(index, 1);
                     playerHP = Math.max(0, playerHP - 10);
                 }
+                if (laser.x < 0) redLasers.splice(index, 1);
+            });
+
+            // Render both high-performance craft models to interface
+            if (playerHP > 0) drawJet(playerX, playerY, "#1e40af", "#00ffff", false); // Blue Interceptor
+            if (cpuHP > 0) drawJet(cpuX, cpuY, "#991b1b", "#ff3333", true); // Red Computer Target
+
+            // Broadcast data states directly out to panel labels
+            document.getElementById('h-blue').innerText = `${playerHP}/100`;
+            document.getElementById('h-red').innerText = `${cpuHP}/100`;
+
+            // Terminal End State Check Overlays
+            if (playerHP === 0 || cpuHP === 0) {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = "20px 'Courier New'";
+                ctx.textAlign = "center";
+                
+                if (cpuHP === 0) {
+                    ctx.fillStyle = "#00ff66";
+                    ctx.fillText("VICTORY: AIRSPACE CLEANSED", canvas.width / 2, canvas.height / 2 - 10);
+                } else {
+                    ctx.fillStyle = "#ff3333";

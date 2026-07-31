@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>:)</title>
+    <title>Cyber Orchestra Matrix</title>
     <style>
         body {
             background-color: #0b0f19;
@@ -99,7 +99,7 @@
 <body>
 
     <h1>CYBER ORCHESTRA MATRIX</h1>
-    <div class="subtitle">Click matrix grids to mutate or improve the melodies.</div>
+    <div class="subtitle">Click matrix grids to mutate or improve the melodies. Play audio engine to engage monitoring systems.</div>
 
     <div class="controls">
         <button id="playBtn">START AUDIO ENGINE</button>
@@ -149,7 +149,6 @@
         let currentStep = 0;
         let intervalId = null;
 
-        // Scale notes (C Minor Pentatonic) across registers
         const scale = [
             [65.41, 73.42, 78.39, 87.31, 98.00, 110.00, 116.54, 130.81],   
             [130.81, 146.83, 156.80, 174.61, 196.00, 220.00, 233.08, 261.63], 
@@ -157,49 +156,20 @@
             [523.25, 587.33, 627.19, 698.46, 783.99, 880.00, 932.33, 1046.50] 
         ];
 
-        // Explicitly defined data blocks ensuring zero array syntax validation breakdown crashes
-        const patterns = [
-            // Sub-Bass
-            [,
- ,
- ,
- ,
- ,
- ,
- ,
-                [0,0,0,0,0,0,0,0]
-            ],
-            // Glitch Strings
-            [,
- ,
- ,
- ,
- ,
- ,
- ,
-                [0,0,0,0,0,0,0,0]
-            ],
-            // Apex Brass
-            [,
- ,
- ,
- ,
- ,
- ,
- ,
-                [0,0,0,0,0,0,0,0]
-            ],
-            // Vector Arpeggiator
-            [,
- ,
- ,
- ,
- ,
- ,
- ,
-                [0,0,0,0,0,0,0,0]
-            ]
-        ];
+        // Safe explicit matrix allocation generation loops
+        const patterns = [];
+        for (let o = 0; o < 4; o++) {
+            patterns[o] = [];
+            for (let r = 0; r < 8; r++) {
+                patterns[o][r] = new Array(8).fill(0);
+            }
+        }
+
+        // Program automatic starter music melodies directly into data grid spaces
+        patterns[0][7][0] = 1; patterns[0][7][4] = 1; // Sub bass hits
+        patterns[1][4][2] = 1; patterns[1][5][6] = 1; // Glitch string accents
+        patterns[2][2][0] = 1; patterns[2][2][4] = 1; // Brass support chords
+        patterns[3][0][1] = 1; patterns[3][1][3] = 1; patterns[3][2][5] = 1; patterns[3][3][7] = 1; // Arp run
 
         function initElements() {
             for (let o = 0; o < 4; o++) {
@@ -238,7 +208,6 @@
 
             osc.frequency.setValueAtTime(frequency, time);
 
-            // LOG INTERCEPTOR BACKEND DATA TRANSMISSION HOOK
             logDiagnosticEvent(orchestraIndex, frequency, time);
 
             if (orchestraIndex === 0) {
@@ -265,3 +234,25 @@
                 filter.frequency.setValueAtTime(600, time);
                 filter.frequency.exponentialRampToValueAtTime(300, time + 0.3);
                 gainNode.gain.setValueAtTime(0.12, time);
+                gainNode.gain.linearRampToValueAtTime(0.001, time + 0.4);
+                osc.start(time);
+                osc.stop(time + 0.42);
+            } 
+            else if (orchestraIndex === 3) {
+                osc.type = 'triangle';
+                filter.type = 'peaking';
+                filter.frequency.setValueAtTime(1500, time);
+                gainNode.gain.setValueAtTime(0.22, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+                osc.start(time);
+                osc.stop(time + 0.18);
+            }
+        }
+
+        function clockTick() {
+            const playTime = audioCtx.currentTime + 0.05;
+
+            document.querySelectorAll('.cell.playing').forEach(el => el.classList.remove('playing'));
+
+            for (let o = 0; o < 4; o++) {
+                for (let r = 0; r < 8; r++) {

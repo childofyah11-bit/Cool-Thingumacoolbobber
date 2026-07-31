@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OS INTERACTIVE OS</title>
+    <title>DEVELOPMENT ENVIRONMENT</title>
     <link rel="dns-prefetch" href="https://8.8.8">
     <link rel="dns-prefetch" href="https://1.1.1">
     <link rel="preconnect" href="https://1.1.1" crossorigin>
@@ -77,7 +77,7 @@
             text-align: left;
         }
         .log-container { 
-            height: 320px; 
+            height: 280px; 
             overflow-y: auto; 
             font-size: 12px; 
             color: #3fb950;
@@ -103,7 +103,7 @@
             outline: none;
         }
         .app-window {
-            background: #040906;
+            background: #020503;
             border: 2px solid #00ffff;
             margin-top: 20px;
             padding: 15px;
@@ -115,11 +115,39 @@
             justify-content: space-between;
             border-bottom: 1px solid #00ffff;
             padding-bottom: 5px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-weight: bold;
             color: #00ffff;
+            font-size: 12px;
         }
         .close-btn { color: #ff3333; cursor: pointer; font-weight: bold; }
+        .editor-textarea {
+            width: 100%;
+            height: 180px;
+            background: #050a06;
+            border: 1px solid #1f6b33;
+            color: #00ff66;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            outline: none;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: none;
+        }
+        .editor-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            background: #00ffff;
+            border: none;
+            color: #000;
+            padding: 6px 15px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+        }
         .success { color: #58ff88; } 
         .info { color: #00ffff; } 
         .fail { color: #ff3333; font-weight: bold; } 
@@ -127,21 +155,21 @@
 </head>
 <body>
     <div class="container"> 
-        <div class="corner-tag">PERSISTENT_HARD_DRIVE_ACTIVE</div>
-        <h1>Titan OS Mainframe</h1> 
-        <div class="subtitle">// NVRAM Storage Secured //</div> 
+        <div class="corner-tag">IDE_KERNEL_LOADED_v7.0</div>
+        <h1>Titan OS & IDE</h1> 
+        <div class="subtitle">// Real-Time Script Compiler //</div> 
         
         <div class="hud-grid">
             <div class="hud-card">
-                <div class="hud-label">📡 Core Uplink</div>
-                <div class="status" id="status-text">CONNECTED</div> 
+                <div class="hud-label">📡 Compiler Core</div>
+                <div class="status" id="status-text">ENGAGED</div> 
             </div>
             <div class="hud-card">
-                <div class="hud-label">⚡ Active Latency</div>
+                <div class="hud-label">⚡ Uplink Speed</div>
                 <div class="latency-badge" id="latency-text">-- MS</div> 
             </div>
             <div class="hud-card">
-                <div class="hud-label">📁 Working Node</div>
+                <div class="hud-label">📁 Current Volume</div>
                 <div class="latency-badge" id="directory-text" style="color: #ffbc00; font-size: 14px;">/root</div> 
             </div>
         </div>
@@ -150,15 +178,15 @@
             <div class="log-container" id="log-box"></div> 
             <div class="input-line">
                 <span class="prompt-label" id="prompt-display">user@titan:/root$</span>
-                <input type="text" id="cmd-field" class="cmd-input" placeholder="Execute OS binaries or code blocks..." autocomplete="off" autofocus>
+                <input type="text" id="cmd-field" class="cmd-input" placeholder="Type commands or write scripts..." autocomplete="off" autofocus>
             </div>
         </div>
 
-        <!-- Dynamic Sandbox UI Module Frame Windows -->
+        <!-- Dedicated Application and Editor Window -->
         <div id="app-sandbox" class="app-window">
             <div class="app-header">
-                <span id="app-title">Application Sandbox</span>
-                <span class="close-btn" onclick="closeApp()">[X] CLOSE</span>
+                <span id="app-title">IDE Application Workbench</span>
+                <span class="close-btn" onclick="closeApp()">[X] EXIT DECK</span>
             </div>
             <div id="app-body"></div>
         </div>
@@ -175,26 +203,23 @@
         const appBody = document.getElementById('app-body');
         const appTitle = document.getElementById('app-title');
 
-        // PERSISTENT STORAGE INITIALIZER
+        // File Storage Engine
         if (!localStorage.getItem('titan_fs')) {
             const initialFS = {
                 "root": {
-                    "readme.txt": "Welcome to Titan Hardware Kernel OS v6.5.\nFiles created here persist across browser restarts.",
-                    "notes.txt": "Target acquired. Network optimization protocols engaged.",
-                    "apps": {}
+                    "script.js": "return 'Hello from inside your storage disk!';",
+                    "readme.txt": "Titan Developer Workspace OS v7.0.\nType 'edit [filename]' to code scripts live."
                 }
             };
             localStorage.setItem('titan_fs', JSON.stringify(initialFS));
-            localStorage.setItem('titan_installed_apps', JSON.stringify([]));
         }
 
         let fileSystem = JSON.parse(localStorage.getItem('titan_fs'));
-        let installedApps = JSON.parse(localStorage.getItem('titan_installed_apps'));
         let currentPath = "root";
+        let activeEditingFile = null;
 
         function saveFS() {
             localStorage.setItem('titan_fs', JSON.stringify(fileSystem));
-            localStorage.setItem('titan_installed_apps', JSON.stringify(installedApps));
         }
 
         function appendLog(message, type) { 
@@ -208,9 +233,20 @@
         function closeApp() {
             appSandbox.style.display = "none";
             appBody.innerHTML = "";
+            activeEditingFile = null;
         }
 
-        // Terminal Command Pipeline Interpreter
+        function saveEditorContent() {
+            const txt = document.getElementById('editor-area').value;
+            if (activeEditingFile) {
+                fileSystem[currentPath][activeEditingFile] = txt;
+                saveFS();
+                appendLog(`Changes successfully compiled to disk workspace: ${activeEditingFile}`, 'success');
+                closeApp();
+            }
+        }
+
+        // Terminal Prompt Interpreter
         cmdField.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const fullInput = this.value.trim();
@@ -225,24 +261,11 @@
 
                 switch(command) {
                     case 'help':
-                        appendLog("OPERATIONAL PROTOCOLS:\n > ls              - Audit directories\n > mkdir [name]    - Allocate storage blocks\n > write [file] [t]- Pack data string to sector\n > cat [file]      - Stream out file contents\n > run [code]      - Execute engine expressions\n > pkg list        - Query app center indices\n > pkg install [id]- Deploy custom execution binary\n > clear           - Flush terminal output loops", "info");
+                        appendLog("AVAILABLE CODE DECK PIPELINES:\n > ls              - Audit directories\n > edit [filename] - Open IDE terminal code layout\n > cat [filename]  - Stream out file contents\n > run [filename]  - Compile and execute script file code\n > rm [filename]   - Scrub file blocks from memory\n > clear           - Flush workspace terminal logs", "info");
                         break;
                     case 'ls':
                         let targetNode = fileSystem[currentPath];
                         let elements = [];
                         for(let key in targetNode) {
-                            if(typeof targetNode[key] === 'object') {
-                                elements.push(`<span style="color: #ffbc00; font-weight:bold;">${key}/</span>`);
-                            } else {
-                                elements.push(`<span>${key}</span>`);
-                            }
+                            elements.push(`<span>${key}</span>`);
                         }
-                        appendLog(elements.length ? elements.join("   ") : "Sector empty.", "success");
-                        break;
-                    case 'mkdir':
-                        if(!args) { appendLog("mkdir: Missing partition identity token", "fail"); break; }
-                        fileSystem[currentPath][args] = {};
-                        saveFS();
-                        appendLog(`Virtual volume structure configured: /${args}`, "success");
-                        break;
-                    case 'write':

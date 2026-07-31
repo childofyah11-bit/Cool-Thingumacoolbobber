@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEVELOPMENT ENVIRONMENT</title>
+    <title>COMPLETE OS</title>
     <link rel="dns-prefetch" href="https://8.8.8">
     <link rel="dns-prefetch" href="https://1.1.1">
     <link rel="preconnect" href="https://1.1.1" crossorigin>
@@ -156,20 +156,20 @@
 <body>
     <div class="container"> 
         <div class="corner-tag">IDE_KERNEL_LOADED_v7.0</div>
-        <h1>Titan OS & IDE</h1> 
-        <div class="subtitle">// Real-Time Script Compiler //</div> 
+        <h1>Titan OS Mainframe</h1> 
+        <div class="subtitle">// Persistent Machine Framework //</div> 
         
         <div class="hud-grid">
             <div class="hud-card">
-                <div class="hud-label">📡 Compiler Core</div>
-                <div class="status" id="status-text">ENGAGED</div> 
+                <div class="hud-label">📡 Machine State</div>
+                <div class="status" id="status-text">ONLINE</div> 
             </div>
             <div class="hud-card">
-                <div class="hud-label">⚡ Uplink Speed</div>
+                <div class="hud-label">⚡ Loop Speed</div>
                 <div class="latency-badge" id="latency-text">-- MS</div> 
             </div>
             <div class="hud-card">
-                <div class="hud-label">📁 Current Volume</div>
+                <div class="hud-label">📁 Virtual Disk</div>
                 <div class="latency-badge" id="directory-text" style="color: #ffbc00; font-size: 14px;">/root</div> 
             </div>
         </div>
@@ -178,11 +178,10 @@
             <div class="log-container" id="log-box"></div> 
             <div class="input-line">
                 <span class="prompt-label" id="prompt-display">user@titan:/root$</span>
-                <input type="text" id="cmd-field" class="cmd-input" placeholder="Type commands or write scripts..." autocomplete="off" autofocus>
+                <input type="text" id="cmd-field" class="cmd-input" placeholder="Type help to view hardware options..." autocomplete="off" autofocus>
             </div>
         </div>
 
-        <!-- Dedicated Application and Editor Window -->
         <div id="app-sandbox" class="app-window">
             <div class="app-header">
                 <span id="app-title">IDE Application Workbench</span>
@@ -203,12 +202,11 @@
         const appBody = document.getElementById('app-body');
         const appTitle = document.getElementById('app-title');
 
-        // File Storage Engine
         if (!localStorage.getItem('titan_fs')) {
             const initialFS = {
                 "root": {
-                    "script.js": "return 'Hello from inside your storage disk!';",
-                    "readme.txt": "Titan Developer Workspace OS v7.0.\nType 'edit [filename]' to code scripts live."
+                    "script.js": "return 50 * 50;",
+                    "readme.txt": "Titan OS v7.0 Mainframe initialized.\nType 'edit [filename]' to save persistent scripts."
                 }
             };
             localStorage.setItem('titan_fs', JSON.stringify(initialFS));
@@ -246,7 +244,6 @@
             }
         }
 
-        // Terminal Prompt Interpreter
         cmdField.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const fullInput = this.value.trim();
@@ -261,7 +258,7 @@
 
                 switch(command) {
                     case 'help':
-                        appendLog("AVAILABLE CODE DECK PIPELINES:\n > ls              - Audit directories\n > edit [filename] - Open IDE terminal code layout\n > cat [filename]  - Stream out file contents\n > run [filename]  - Compile and execute script file code\n > rm [filename]   - Scrub file blocks from memory\n > clear           - Flush workspace terminal logs", "info");
+                        appendLog("AVAILABLE CODE DECK PIPELINES:\n > ls              - Audit directories\n > edit [filename] - Open IDE code screen overlay\n > cat [filename]  - Stream out file contents\n > run [filename]  - Compile and execute script file code\n > rm [filename]   - Scrub file blocks from memory\n > clear           - Flush terminal output logs", "info");
                         break;
                     case 'ls':
                         let targetNode = fileSystem[currentPath];
@@ -269,3 +266,6 @@
                         for(let key in targetNode) {
                             elements.push(`<span>${key}</span>`);
                         }
+                        appendLog(elements.length ? elements.join("   ") : "Sector empty.", "success");
+                        break;
+                    case 'edit':

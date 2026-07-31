@@ -1,87 +1,248 @@
-const logBox = document.getElementById('log-box'); 
-const statusText = document.getElementById('status-text'); 
-const latencyText = document.getElementById('latency-text'); 
-const cmdField = document.getElementById('cmd-field');
-
-function appendLog(message, type) { 
-    requestAnimationFrame(() => { 
-        const logEntry = document.createElement('div'); 
-        logEntry.className = type || ''; 
-        logEntry.innerHTML = message; 
-        logBox.appendChild(logEntry); 
-        logBox.scrollTop = logBox.scrollHeight; 
-    }); 
-} 
-
-// Live Command Execution Handler
-cmdField.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        const fullInput = this.value.trim();
-        if (!fullInput) return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITAN OS INTERACTIVE OS</title>
+    <link rel="dns-prefetch" href="https://8.8.8">
+    <link rel="dns-prefetch" href="https://1.1.1">
+    <link rel="preconnect" href="https://1.1.1" crossorigin>
+    <style>
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            background-color: #030704; 
+            color: #3fb950; 
+            text-align: center; 
+            padding: 20px; 
+            margin: 0;
+            background-image: linear-gradient(rgba(16, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), 
+                              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 4px, 6px 100%;
+        } 
+        .container { 
+            max-width: 850px; 
+            margin: 0 auto; 
+            background: #070f0a; 
+            padding: 25px; 
+            border: 1px solid #1f6b33; 
+            box-shadow: 0 0 30px rgba(0, 255, 100, 0.15), inset 0 0 15px rgba(0,0,0,0.9);
+            position: relative;
+        } 
+        .corner-tag {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 10px;
+            color: #1f6b33;
+            letter-spacing: 2px;
+        }
+        h1 { 
+            margin-top: 5px; 
+            color: #58ff88; 
+            font-size: 28px; 
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 8px rgba(88, 255, 136, 0.6);
+        } 
+        .subtitle {
+            margin: -5px 0 20px 0; 
+            font-size: 11px; 
+            color: #1f6b33;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        .hud-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .hud-card {
+            background: #040906;
+            border: 1px solid #1f6b33;
+            padding: 10px;
+            text-align: left;
+        }
+        .hud-label {
+            font-size: 10px;
+            color: #1f6b33;
+            text-transform: uppercase;
+        }
+        .status { font-size: 14px; color: #58ff88; font-weight: bold; } 
+        .latency-badge { font-size: 16px; color: #00ffff; font-weight: bold; } 
+        .terminal-box {
+            background: #020402; 
+            border: 1px solid #1f6b33; 
+            padding: 15px;
+            text-align: left;
+        }
+        .log-container { 
+            height: 320px; 
+            overflow-y: auto; 
+            font-size: 12px; 
+            color: #3fb950;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+        } 
+        .input-line {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #58ff88;
+            border-top: 1px solid #1f6b33;
+            padding-top: 10px;
+        }
+        .prompt-label { margin-right: 5px; color: #58ff88; }
+        .cmd-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ffff;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+        }
+        .app-window {
+            background: #040906;
+            border: 2px solid #00ffff;
+            margin-top: 20px;
+            padding: 15px;
+            text-align: left;
+            display: none;
+        }
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #00ffff;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #00ffff;
+        }
+        .close-btn { color: #ff3333; cursor: pointer; font-weight: bold; }
+        .success { color: #58ff88; } 
+        .info { color: #00ffff; } 
+        .fail { color: #ff3333; font-weight: bold; } 
+    </style>
+</head>
+<body>
+    <div class="container"> 
+        <div class="corner-tag">PERSISTENT_HARD_DRIVE_ACTIVE</div>
+        <h1>Titan OS Mainframe</h1> 
+        <div class="subtitle">// NVRAM Storage Secured //</div> 
         
-        appendLog(`[INPUT] user@netcore:~# ${fullInput}`, 'info');
-        this.value = ''; // Reset prompt input
+        <div class="hud-grid">
+            <div class="hud-card">
+                <div class="hud-label">📡 Core Uplink</div>
+                <div class="status" id="status-text">CONNECTED</div> 
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">⚡ Active Latency</div>
+                <div class="latency-badge" id="latency-text">-- MS</div> 
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">📁 Working Node</div>
+                <div class="latency-badge" id="directory-text" style="color: #ffbc00; font-size: 14px;">/root</div> 
+            </div>
+        </div>
+        
+        <div class="terminal-box">
+            <div class="log-container" id="log-box"></div> 
+            <div class="input-line">
+                <span class="prompt-label" id="prompt-display">user@titan:/root$</span>
+                <input type="text" id="cmd-field" class="cmd-input" placeholder="Execute OS binaries or code blocks..." autocomplete="off" autofocus>
+            </div>
+        </div>
 
-        // Check if user is trying to execute code
-        if (fullInput.toLowerCase().startsWith('run ')) {
-            const jsCode = fullInput.substring(4); // Strip out the word "run "
-            try {
-                // Safely capture system evaluations
-                const result = new Function(`return (${jsCode})`)();
-                appendLog(` > EXECUTION SUCCESS:<br><span style="color:#00ffff;">${result !== undefined ? result : 'Statement executed successfully.'}</span>`, 'success');
-            } catch (err) {
-                appendLog(` > RUNTIME EXCEPTION:<br><span style="color:#ff3333;">${err.message}</span>`, 'fail');
-            }
-            return;
+        <!-- Dynamic Sandbox UI Module Frame Windows -->
+        <div id="app-sandbox" class="app-window">
+            <div class="app-header">
+                <span id="app-title">Application Sandbox</span>
+                <span class="close-btn" onclick="closeApp()">[X] CLOSE</span>
+            </div>
+            <div id="app-body"></div>
+        </div>
+    </div> 
+
+    <script> 
+        const logBox = document.getElementById('log-box'); 
+        const statusText = document.getElementById('status-text'); 
+        const latencyText = document.getElementById('latency-text'); 
+        const directoryText = document.getElementById('directory-text'); 
+        const promptDisplay = document.getElementById('prompt-display'); 
+        const cmdField = document.getElementById('cmd-field');
+        const appSandbox = document.getElementById('app-sandbox');
+        const appBody = document.getElementById('app-body');
+        const appTitle = document.getElementById('app-title');
+
+        // PERSISTENT STORAGE INITIALIZER
+        if (!localStorage.getItem('titan_fs')) {
+            const initialFS = {
+                "root": {
+                    "readme.txt": "Welcome to Titan Hardware Kernel OS v6.5.\nFiles created here persist across browser restarts.",
+                    "notes.txt": "Target acquired. Network optimization protocols engaged.",
+                    "apps": {}
+                }
+            };
+            localStorage.setItem('titan_fs', JSON.stringify(initialFS));
+            localStorage.setItem('titan_installed_apps', JSON.stringify([]));
         }
 
-        const input = fullInput.toLowerCase();
-        switch(input) {
-            case 'help':
-                appendLog(" > System commands: [status, neofetch, clear, matrix, ping]<br> > <b>CODE EXECUTION COMMAND:</b> type <u><b>run [your code here]</b></u>", "info");
-                break;
-            case 'status':
-                appendLog(` > Mainframe state: ${statusText.innerText} | Thread tracking loop verified.`, "success");
-                break;
-            case 'clear':
-                logBox.innerHTML = '';
-                break;
-            case 'matrix':
-                appendLog(" > Wake up, Neo... The Matrix has you. 🖥️", "success");
-                break;
-            case 'ping':
-                appendLog(` > Manual intercept checked: ${latencyText.innerText}`, "info");
-                break;
-            case 'neofetch':
-                appendLog(" 🖥️  <b>OS:</b> Matrix Runtime Engine v6.0<br> 📟 <b>Shell:</b> Netcore Eval Environment<br> 📡 <b>Uplink:</b> Active Loop", "success");
-                break;
-            default:
-                appendLog(` > Command execution failure: '${input}' unrecognized. Type <b>help</b> for syntax.`, "fail");
+        let fileSystem = JSON.parse(localStorage.getItem('titan_fs'));
+        let installedApps = JSON.parse(localStorage.getItem('titan_installed_apps'));
+        let currentPath = "root";
+
+        function saveFS() {
+            localStorage.setItem('titan_fs', JSON.stringify(fileSystem));
+            localStorage.setItem('titan_installed_apps', JSON.stringify(installedApps));
         }
-    }
-});
 
-// Click wrapper to maintain keyboard target focus
-document.querySelector('.terminal-box').addEventListener('click', () => cmdField.focus());
+        function appendLog(message, type) { 
+            const logEntry = document.createElement('div'); 
+            logEntry.className = type || ''; 
+            logEntry.innerHTML = message; 
+            logBox.appendChild(logEntry); 
+            logBox.scrollTop = logBox.scrollHeight; 
+        } 
 
-const worker = new Worker('./worker.js'); 
-worker.onmessage = function(e) { 
-    if (e.data === 'pulse') { 
-        const startTime = performance.now(); 
-        fetch(`./ping.txt?t=${Date.now()}`, { cache: 'no-store' }) 
-        .then(res => { 
-            if (!res.ok) throw new Error(); 
-            const latency = Math.round(performance.now() - startTime); 
-            latencyText.innerText = `${latency} MS`; 
-            statusText.innerText = "ONLINE / SECURED"; 
-            statusText.style.color = "#58ff88"; 
-        }) 
-        .catch(() => { 
-            statusText.innerText = "DROPPED / RETRYING"; 
-            statusText.style.color = "#ff3333"; 
-            appendLog("[ALERT] Background loop drop caught.", "fail"); 
-        }); 
-    } 
-}; 
-appendLog("<b>Matrix Compiler Mainframe v6.0</b> booted.", "success");
-appendLog("Type <u><b>run [JS code]</b></u> to execute statements (Example: <i>run 120 * 45</i>).", "info");
+        function closeApp() {
+            appSandbox.style.display = "none";
+            appBody.innerHTML = "";
+        }
+
+        // Terminal Command Pipeline Interpreter
+        cmdField.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const fullInput = this.value.trim();
+                if (!fullInput) return;
+                
+                appendLog(`[INPUT] user@titan:/${currentPath}$ ${fullInput}`, 'info');
+                this.value = ''; 
+
+                const parts = fullInput.split(" ");
+                const command = parts[0].toLowerCase();
+                const args = parts.slice(1).join(" ");
+
+                switch(command) {
+                    case 'help':
+                        appendLog("OPERATIONAL PROTOCOLS:\n > ls              - Audit directories\n > mkdir [name]    - Allocate storage blocks\n > write [file] [t]- Pack data string to sector\n > cat [file]      - Stream out file contents\n > run [code]      - Execute engine expressions\n > pkg list        - Query app center indices\n > pkg install [id]- Deploy custom execution binary\n > clear           - Flush terminal output loops", "info");
+                        break;
+                    case 'ls':
+                        let targetNode = fileSystem[currentPath];
+                        let elements = [];
+                        for(let key in targetNode) {
+                            if(typeof targetNode[key] === 'object') {
+                                elements.push(`<span style="color: #ffbc00; font-weight:bold;">${key}/</span>`);
+                            } else {
+                                elements.push(`<span>${key}</span>`);
+                            }
+                        }
+                        appendLog(elements.length ? elements.join("   ") : "Sector empty.", "success");
+                        break;
+                    case 'mkdir':
+                        if(!args) { appendLog("mkdir: Missing partition identity token", "fail"); break; }
+                        fileSystem[currentPath][args] = {};
+                        saveFS();
+                        appendLog(`Virtual volume structure configured: /${args}`, "success");
+                        break;
+                    case 'write':

@@ -3,281 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STRATEGO</title>
+    <title>:)</title>
     <style>
         body {
-            background-color: #050806;
-            color: #00ff66;
+            background-color: #0b0f19;
+            color: #4af626;
             font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
         }
-        .header {
-            margin-bottom: 10px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 13px;
+        h1 {
+            text-shadow: 0 0 10px #4af626;
+            margin-bottom: 5px;
         }
-        .workspace {
-            display: flex;
-            gap: 20px;
-            background: #09120c;
-            padding: 20px;
-            border: 2px solid #1f6b33;
-            box-shadow: 0 0 35px rgba(0, 255, 100, 0.2);
+        .subtitle {
+            color: #8a99ad;
+            margin-bottom: 25px;
+            font-size: 14px;
         }
-        #board {
+        .controls {
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #162235;
+            color: #4af626;
+            border: 2px solid #4af626;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(74, 246, 38, 0.2);
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            background-color: #4af626;
+            color: #0b0f19;
+            box-shadow: 0 0 15px #4af626;
+        }
+        .orchestra-container {
             display: grid;
-            grid-template-columns: repeat(6, 55px);
-            grid-template-rows: repeat(6, 55px);
-            gap: 4px;
-            background: #020402;
-            padding: 6px;
-            border: 1px solid #1f6b33;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            max-width: 900px;
+            width: 100%;
         }
-        .cell {
-            width: 55px;
-            height: 55px;
-            background: #040805;
-            border: 1px solid #143d1e;
+        .orchestra-card {
+            background: #111827;
+            border: 1px solid #1f293d;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .orchestra-card.active-neon-0 { border-color: #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+        .orchestra-card.active-neon-1 { border-color: #ff007f; box-shadow: 0 0 10px rgba(255,0,127,0.3); }
+        .orchestra-card.active-neon-2 { border-color: #9d4edd; box-shadow: 0 0 10px rgba(157,78,221,0.3); }
+        .orchestra-card.active-neon-3 { border-color: #ffb703; box-shadow: 0 0 10px rgba(255,183,3,0.3); }
+
+        .orchestra-header {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .orchestra-title {
             font-weight: bold;
             font-size: 16px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background-color: #1f293d;
+            border-radius: 3px;
             cursor: pointer;
-            user-select: none;
-            box-sizing: border-box;
+            transition: background-color 0.1s;
         }
-        .cell:hover { background: #0c1a0f; }
-        .blue-piece { color: #00ffff; background: #1e3a8a; border: 1px solid #00ffff; border-radius: 4px; }
-        .red-piece { color: #ff3333; background: #7f1d1d; border: 1px solid #ff3333; border-radius: 4px; }
-        .selected { border: 2px solid #00ff66 !important; background: #143d1e; }
-        .matrix-panel {
-            width: 280px;
-            background: #040805;
-            border: 1px solid #1f6b33;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-        }
-        .panel-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #00ffff;
-            border-bottom: 1px solid #1f6b33;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-        }
-        .telemetry-row {
-            font-size: 12px;
-            color: #3fb950;
-            text-align: left;
-            margin-bottom: 8px;
-        }
-        .val { color: #00ffff; font-weight: bold; }
-        #log-box {
-            border-top: 1px dashed #1f6b33;
-            padding-top: 8px;
-            margin-top: 8px;
-            height: 240px;
-            overflow-y: auto;
-            font-size: 11px;
-            text-align: left;
-            line-height: 18px;
+        .orchestra-card:nth-child(1) .cell.selected { background-color: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
+        .orchestra-card:nth-child(2) .cell.selected { background-color: #ff007f; box-shadow: 0 0 8px #ff007f; }
+        .orchestra-card:nth-child(3) .cell.selected { background-color: #9d4edd; box-shadow: 0 0 8px #9d4edd; }
+        .orchestra-card:nth-child(4) .cell.selected { background-color: #ffb703; box-shadow: 0 0 8px #ffb703; }
+        
+        .cell.playing {
+            transform: scale(1.1);
+            filter: brightness(1.6);
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        ⚡ STRATEGO DECK // Click a Blue piece, then click a neighboring square to move or attack ⚡
+    <h1>CYBER ORCHESTRA MATRIX</h1>
+    <div class="subtitle">Click matrix grids to mutate or improve the melodies.</div>
+
+    <div class="controls">
+        <button id="playBtn">START AUDIO ENGINE</button>
     </div>
 
-    <div class="workspace">
-        <!-- 6x6 Battle Grid -->
-        <div id="board"></div>
-
-        <!-- Right Side Console Metrics HUD -->
-        <div class="matrix-panel">
-            <div class="panel-title">🛰️ BATTLE LOG CONSOLE</div>
-            <div class="telemetry-row">TURN TRACKER: <span class="val" id="turn-txt">YOUR TURN</span></div>
-            <div id="log-box">
-                [SYSTEM]: Matrix initialised clean.<br>Attack hidden Red targets (?) to track the Flag!
+    <div class="orchestra-container">
+        <!-- Neon Sub-Bass Section -->
+        <div class="orchestra-card active-neon-0">
+            <div class="orchestra-header">
+                <span class="orchestra-title" style="color: #00f0ff;"> NEON SUB-BASS</span>
+                <span style="color: #8a99ad; font-size: 12px;">Sine / Low-Pass</span>
             </div>
+            <div class="grid" id="grid-0"></div>
+        </div>
+
+        <!-- Cyber Strings Section -->
+        <div class="orchestra-card active-neon-1">
+            <div class="orchestra-header">
+                <span class="orchestra-title" style="color: #ff007f;"> GLITCH STRINGS</span>
+                <span style="color: #8a99ad; font-size: 12px;">Sawtooth / High-Pass</span>
+            </div>
+            <div class="grid" id="grid-1"></div>
+        </div>
+
+        <!-- Digital Brass / Chords Section -->
+        <div class="orchestra-card active-neon-2">
+            <div class="orchestra-header">
+                <span class="orchestra-title" style="color: #9d4edd;"> APEX BRASS</span>
+                <span style="color: #8a99ad; font-size: 12px;">Square / Detuned</span>
+            </div>
+            <div class="grid" id="grid-2"></div>
+        </div>
+
+        <!-- Vector Arpeggiator Section -->
+        <div class="orchestra-card active-neon-3">
+            <div class="orchestra-header">
+                <span class="orchestra-title" style="color: #ffb703;"> VECTOR ARPEGGIATOR</span>
+                <span style="color: #8a99ad; font-size: 12px;">Triangle / Echo</span>
+            </div>
+            <div class="grid" id="grid-3"></div>
         </div>
     </div>
 
     <script>
-        const boardElement = document.getElementById('board');
-        const logBox = document.getElementById('log-box');
-        const turnTxt = document.getElementById('turn-txt');
+        let audioCtx = null;
+        let isPlaying = false;
+        let currentStep = 0;
+        let intervalId = null;
 
-        // Create clean 6x6 memory map grid array tracking arrays
-        let grid = [
-            [null, null, null, null, null, null],
-            [null, null, null, null, null, null],
-            [null, null, null, null, null, null],
-            [null, null, null, null, null, null],
-            [null, null, null, null, null, null],
-            [null, null, null, null, null, null]
+        // Scale notes (C Minor Pentatonic) across registers
+        const scale = [
+            [65.41, 73.42, 78.39, 87.31, 98.00, 110.00, 116.54, 130.81],   
+            [130.81, 146.83, 156.80, 174.61, 196.00, 220.00, 233.08, 261.63], 
+            [261.63, 293.66, 313.60, 349.23, 392.00, 440.00, 466.16, 523.25], 
+            [523.25, 587.33, 627.19, 698.46, 783.99, 880.00, 932.33, 1046.50] 
         ];
 
-        let selectedPiece = null;
-        let isPlayerTurn = true;
+        // Explicitly defined data blocks ensuring zero array syntax validation breakdown crashes
+        const patterns = [
+            // Sub-Bass
+            [,
+ ,
+ ,
+ ,
+ ,
+ ,
+ ,
+                [0,0,0,0,0,0,0,0]
+            ],
+            // Glitch Strings
+            [,
+ ,
+ ,
+ ,
+ ,
+ ,
+ ,
+                [0,0,0,0,0,0,0,0]
+            ],
+            // Apex Brass
+            [,
+ ,
+ ,
+ ,
+ ,
+ ,
+ ,
+                [0,0,0,0,0,0,0,0]
+            ],
+            // Vector Arpeggiator
+            [,
+ ,
+ ,
+ ,
+ ,
+ ,
+ ,
+                [0,0,0,0,0,0,0,0]
+            ]
+        ];
 
-        function appendLog(msg) {
-            logBox.innerHTML += `<br>> ${msg}`;
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        function initGame() {
-            // Setup Red Computer Units on top row (Row 0)
-            const redPool = ["F", "B", "5", "4", "3", "2"];
-            for (let c = 0; c < 6; c++) {
-                grid[0][c] = { team: 'red', value: redPool[c] };
-            }
-
-            // Setup Blue Player Units on bottom row (Row 5)
-            const bluePool = ["F", "B", "5", "4", "3", "2"];
-            for (let c = 0; c < 6; c++) {
-                grid[5][c] = { team: 'blue', value: bluePool[c] };
-            }
-
-            renderBoard();
-        }
-
-        function renderBoard() {
-            boardElement.innerHTML = '';
-            for (let r = 0; r < 6; r++) {
-                for (let c = 0; c < 6; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    
-                    const piece = grid[r][c];
-                    if (piece) {
-                        if (piece.team === 'blue') {
-                            cell.classList.add('blue-piece');
-                            cell.innerHTML = `<span style="font-size:10px; opacity:0.6;">BLUE</span><br>${piece.value}`;
-                        } else {
-                            cell.classList.add('red-piece');
-                            cell.innerHTML = `<span style="font-size:10px; opacity:0.6;">RED</span><br>?`; // Hidden from viewer
+        function initElements() {
+            for (let o = 0; o < 4; o++) {
+                const gridEl = document.getElementById(`grid-${o}`);
+                gridEl.innerHTML = ''; 
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        cell.dataset.orc = o;
+                        cell.dataset.row = r;
+                        cell.dataset.col = c;
+                        
+                        if (patterns[o][r][c] === 1) {
+                            cell.classList.add('selected');
                         }
-                    }
 
-                    // Highlight selected piece
-                    if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
-                        cell.classList.add('selected');
-                    }
-
-                    cell.addEventListener('click', () => handleCellClick(r, c));
-                    boardElement.appendChild(cell);
-                }
-            }
-        }
-
-        function handleCellClick(r, c) {
-            if (!isPlayerTurn) return;
-
-            const piece = grid[r][c];
-
-            // Hook and select an player item
-            if (piece && piece.team === 'blue') {
-                if (piece.value === 'F' || piece.value === 'B') {
-                    appendLog("Flags and Bombs cannot move!");
-                    return;
-                }
-                selectedPiece = { r, c };
-                renderBoard();
-                return;
-            }
-
-            // Move or combat processing trigger path rules
-            if (selectedPiece) {
-                const dr = Math.abs(r - selectedPiece.r);
-                const dc = Math.abs(c - selectedPiece.c);
-
-                // Step limitation logic constraint validation
-                if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
-                    const movingPiece = grid[selectedPiece.r][selectedPiece.c];
-
-                    if (!piece) {
-                        // Empty slot navigation movement routing
-                        grid[r][c] = movingPiece;
-                        grid[selectedPiece.r][selectedPiece.c] = null;
-                        appendLog(`Moved piece to [Row:${r}, Col:${c}]`);
-                        selectedPiece = null;
-                        endTurn();
-                    } else if (piece.team === 'red') {
-                        // Battle evaluation handling pipeline
-                        handleBattle(selectedPiece.r, selectedPiece.c, r, c);
-                        selectedPiece = null;
-                        endTurn();
+                        cell.addEventListener('click', () => {
+                            const isSel = cell.classList.toggle('selected');
+                            patterns[o][r][c] = isSel ? 1 : 0;
+                        });
+                        gridEl.appendChild(cell);
                     }
                 }
             }
         }
 
-        function handleBattle(pRow, pCol, eRow, eCol) {
-            const blue = grid[pRow][pCol];
-            const red = grid[eRow][eCol];
+        function triggerSynthVoice(orchestraIndex, frequency, time) {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
 
-            appendLog(`COMBAT: Blue ${blue.value} attacks Red (${red.value})`);
+            osc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
 
-            if (red.value === 'F') {
-                appendLog("VICTORY! Enemy Flag captured!");
-                grid[eRow][eCol] = blue;
-                grid[pRow][pCol] = null;
-                isPlayerTurn = false;
-                turnTxt.innerText = "WINNER!";
-                renderBoard();
-                return;
-            }
+            osc.frequency.setValueAtTime(frequency, time);
 
-            if (red.value === 'B') {
-                appendLog("BOOM! Blue hit a Bomb and is vaporised.");
-                grid[pRow][pCol] = null;
-                renderBoard();
-                return;
-            }
+            // LOG INTERCEPTOR BACKEND DATA TRANSMISSION HOOK
+            logDiagnosticEvent(orchestraIndex, frequency, time);
 
-            const bRank = parseInt(blue.value);
-            const rRank = parseInt(red.value);
-
-            if (bRank > rRank) {
-                appendLog(`Blue wins! Red Rank ${red.value} destroyed.`);
-                grid[eRow][eCol] = blue;
-                grid[pRow][pCol] = null;
-            } else if (bRank < rRank) {
-                appendLog(`Red wins! Blue Rank ${blue.value} destroyed.`);
-                grid[pRow][pCol] = null;
-            } else {
-                appendLog("Stalemate! Both items eliminated.");
-                grid[pRow][pCol] = null;
-                grid[eRow][eCol] = null;
-            }
-            renderBoard();
-        }
-
-        function endTurn() {
-            isPlayerTurn = false;
-            turnTxt.innerText = "COMPUTER TURN";
-            setTimeout(runComputerAI, 800);
-        }
-
-        function runComputerAI() {
-            let legalMoves = [];
-
-            // Scan board allocations for valid machine paths
-            for (let r = 0; r < 6; r++) {
-                for (let c = 0; c < 6; c++) {
-                    if (grid[r][c] && grid[r][c].team === 'red' && grid[r][c].value !== 'F' && grid[r][c].value !== 'B') {
+            if (orchestraIndex === 0) {
+                osc.type = 'sine';
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(160, time);
+                gainNode.gain.setValueAtTime(0.5, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.35);
+                osc.start(time);
+                osc.stop(time + 0.4);
+            } 
+            else if (orchestraIndex === 1) {
+                osc.type = 'sawtooth';
+                filter.type = 'highpass';
+                filter.frequency.setValueAtTime(800, time);
+                gainNode.gain.setValueAtTime(0.18, time);
+                gainNode.gain.linearRampToValueAtTime(0.01, time + 0.2);
+                osc.start(time);
+                osc.stop(time + 0.22);
+            } 
+            else if (orchestraIndex === 2) {
+                osc.type = 'square';
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(600, time);
+                filter.frequency.exponentialRampToValueAtTime(300, time + 0.3);
+                gainNode.gain.setValueAtTime(0.12, time);

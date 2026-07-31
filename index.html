@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STRATEGO COMPANION</title>
+    <title>CYBER STRATEGO</title>
     <style>
         body {
             background-color: #050806;
@@ -35,30 +35,31 @@
         }
         #board {
             display: grid;
-            grid-template-columns: repeat(10, 40px);
-            grid-template-rows: repeat(10, 40px);
-            gap: 2px;
-            background: #111;
-            padding: 4px;
+            grid-template-columns: repeat(6, 55px);
+            grid-template-rows: repeat(6, 55px);
+            gap: 4px;
+            background: #020402;
+            padding: 6px;
             border: 1px solid #1f6b33;
         }
         .cell {
-            width: 40px;
-            height: 40px;
-            background: #020402;
+            width: 55px;
+            height: 55px;
+            background: #040805;
             border: 1px solid #143d1e;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 16px;
             cursor: pointer;
             user-select: none;
+            box-sizing: border-box;
         }
         .cell:hover { background: #0c1a0f; }
-        .lake { background: #1d4ed8 !important; cursor: not-allowed; }
-        .blue-piece { color: #00ffff; background: #1e3a8a; border-radius: 4px; }
-        .red-piece { color: #ff3333; background: #7f1d1d; border-radius: 4px; }
+        .blue-piece { color: #00ffff; background: #1e3a8a; border: 1px solid #00ffff; border-radius: 4px; }
+        .red-piece { color: #ff3333; background: #7f1d1d; border: 1px solid #ff3333; border-radius: 4px; }
         .selected { border: 2px solid #00ff66 !important; background: #143d1e; }
         .matrix-panel {
             width: 280px;
@@ -84,24 +85,34 @@
             margin-bottom: 8px;
         }
         .val { color: #00ffff; font-weight: bold; }
+        #log-box {
+            border-top: 1px dashed #1f6b33;
+            padding-top: 8px;
+            margin-top: 8px;
+            height: 240px;
+            overflow-y: auto;
+            font-size: 11px;
+            text-align: left;
+            line-height: 18px;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        ⚡ STRATEGO DUEL // Click your Blue piece, then click an adjacent square to move ⚡
+        ⚡ STRATEGO DECK // Click a Blue piece, then click a neighboring square to move or attack ⚡
     </div>
 
     <div class="workspace">
-        <!-- 10x10 Battlefield Grid System -->
+        <!-- 6x6 Battle Grid -->
         <div id="board"></div>
 
-        <!-- System Intelligence Feed Panel -->
+        <!-- Right Side Console Metrics HUD -->
         <div class="matrix-panel">
             <div class="panel-title">🛰️ BATTLE LOG CONSOLE</div>
             <div class="telemetry-row">TURN TRACKER: <span class="val" id="turn-txt">YOUR TURN</span></div>
-            <div class="telemetry-row" style="border-top: 1px dashed #1f6b33; padding-top:8px; margin-top:8px; height: 260px; overflow-y: auto;" id="log-box">
-                [SYSTEM]: Game initialized.<br>Capture the hidden Red Flag (F) to win!
+            <div id="log-box">
+                [SYSTEM]: Matrix initialised clean.<br>Attack hidden Red targets (?) to track the Flag!
             </div>
         </div>
     </div>
@@ -111,43 +122,35 @@
         const logBox = document.getElementById('log-box');
         const turnTxt = document.getElementById('turn-txt');
 
-        let grid = Array(10).fill(null).map(() => Array(10).fill(null));
-        let selectedPiece = null;
-        let isPlayerTurn = true;
-
-        // Two lakes in the middle of the board where pieces cannot move
-        const lakes = [
-            {r:4, c:2}, {r:4, c:3}, {r:5, c:2}, {r:5, c:3},
-            {r:4, c:6}, {r:4, c:7}, {r:5, c:6}, {r:5, c:7}
+        // Create clean 6x6 memory map grid array tracking arrays
+        let grid = [
+            [null, null, null, null, null, null],
+            [null, null, null, null, null, null],
+            [null, null, null, null, null, null],
+            [null, null, null, null, null, null],
+            [null, null, null, null, null, null],
+            [null, null, null, null, null, null]
         ];
 
-        function isLake(r, c) {
-            return lakes.some(l => l.r === r && l.c === c);
-        }
+        let selectedPiece = null;
+        let isPlayerTurn = true;
 
         function appendLog(msg) {
             logBox.innerHTML += `<br>> ${msg}`;
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // Setup pieces: B=Bomb, F=Flag, numbers 1-9 are army strengths
         function initGame() {
-            // Setup Red AI Pieces on rows 0-1 (Hidden values)
-            const redPool = ["F", "B", "B", "1", "2", "3", "4", "5", "8", "9"];
-            let idx = 0;
-            for(let r=0; r<2; r++) {
-                for(let c=0; c<5; c++) {
-                    grid[r][c] = { team: 'red', value: redPool[idx++] };
-                }
+            // Setup Red Computer Units on top row (Row 0)
+            const redPool = ["F", "B", "5", "4", "3", "2"];
+            for (let c = 0; c < 6; c++) {
+                grid[0][c] = { team: 'red', value: redPool[c] };
             }
 
-            // Setup Blue Player Pieces on rows 8-9 (Visible values)
-            const bluePool = ["F", "B", "B", "1", "2", "3", "4", "5", "8", "9"];
-            idx = 0;
-            for(let r=8; r<10; r++) {
-                for(let c=0; c<5; c++) {
-                    grid[r][c] = { team: 'blue', value: bluePool[idx++] };
-                }
+            // Setup Blue Player Units on bottom row (Row 5)
+            const bluePool = ["F", "B", "5", "4", "3", "2"];
+            for (let c = 0; c < 6; c++) {
+                grid[5][c] = { team: 'blue', value: bluePool[c] };
             }
 
             renderBoard();
@@ -155,28 +158,23 @@
 
         function renderBoard() {
             boardElement.innerHTML = '';
-            for (let r = 0; r < 10; r++) {
-                for (let c = 0; c < 10; c++) {
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 6; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
-
-                    if (isLake(r, c)) {
-                        cell.classList.add('lake');
-                    } else {
-                        const piece = grid[r][c];
-                        if (piece) {
-                            if (piece.team === 'blue') {
-                                cell.classList.add('blue-piece');
-                                cell.innerText = piece.value;
-                            } else {
-                                cell.classList.add('red-piece');
-                                cell.innerText = '?'; // AI pieces remain completely hidden
-                            }
+                    
+                    const piece = grid[r][c];
+                    if (piece) {
+                        if (piece.team === 'blue') {
+                            cell.classList.add('blue-piece');
+                            cell.innerHTML = `<span style="font-size:10px; opacity:0.6;">BLUE</span><br>${piece.value}`;
+                        } else {
+                            cell.classList.add('red-piece');
+                            cell.innerHTML = `<span style="font-size:10px; opacity:0.6;">RED</span><br>?`; // Hidden from viewer
                         }
                     }
 
+                    // Highlight selected piece
                     if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
                         cell.classList.add('selected');
                     }
@@ -192,7 +190,7 @@
 
             const piece = grid[r][c];
 
-            // Select a blue piece
+            // Hook and select an player item
             if (piece && piece.team === 'blue') {
                 if (piece.value === 'F' || piece.value === 'B') {
                     appendLog("Flags and Bombs cannot move!");
@@ -203,26 +201,24 @@
                 return;
             }
 
-            // If a piece is already selected, try to move it to the clicked cell
+            // Move or combat processing trigger path rules
             if (selectedPiece) {
                 const dr = Math.abs(r - selectedPiece.r);
                 const dc = Math.abs(c - selectedPiece.c);
 
-                // Move rule check: Must be exactly 1 block away sideways or vertically
+                // Step limitation logic constraint validation
                 if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
-                    if (isLake(r, c)) return;
-
                     const movingPiece = grid[selectedPiece.r][selectedPiece.c];
-                    
+
                     if (!piece) {
-                        // Move to empty space
+                        // Empty slot navigation movement routing
                         grid[r][c] = movingPiece;
                         grid[selectedPiece.r][selectedPiece.c] = null;
-                        appendLog(`Moved piece to square [${r}, ${c}]`);
+                        appendLog(`Moved piece to [Row:${r}, Col:${c}]`);
                         selectedPiece = null;
                         endTurn();
                     } else if (piece.team === 'red') {
-                        // Battle Engagement Rule Processors
+                        // Battle evaluation handling pipeline
                         handleBattle(selectedPiece.r, selectedPiece.c, r, c);
                         selectedPiece = null;
                         endTurn();
@@ -235,38 +231,37 @@
             const blue = grid[pRow][pCol];
             const red = grid[eRow][eCol];
 
-            appendLog(`ENGAGEMENT! Blue ${blue.value} vs Red ${red.value}`);
+            appendLog(`COMBAT: Blue ${blue.value} attacks Red (${red.value})`);
 
             if (red.value === 'F') {
-                appendLog("VICTORY! You captured the Enemy Flag!");
+                appendLog("VICTORY! Enemy Flag captured!");
                 grid[eRow][eCol] = blue;
                 grid[pRow][pCol] = null;
                 isPlayerTurn = false;
-                turnTxt.innerText = "YOU WIN!";
+                turnTxt.innerText = "WINNER!";
                 renderBoard();
                 return;
             }
 
             if (red.value === 'B') {
-                appendLog("EXPLOSION! Blue hit a Bomb and died.");
+                appendLog("BOOM! Blue hit a Bomb and is vaporised.");
                 grid[pRow][pCol] = null;
                 renderBoard();
                 return;
             }
 
-            // Basic number rank comparisons
             const bRank = parseInt(blue.value);
             const rRank = parseInt(red.value);
 
             if (bRank > rRank) {
-                appendLog(`Blue wins! Red ${red.value} destroyed.`);
+                appendLog(`Blue wins! Red Rank ${red.value} destroyed.`);
                 grid[eRow][eCol] = blue;
                 grid[pRow][pCol] = null;
             } else if (bRank < rRank) {
-                appendLog(`Red wins! Blue ${blue.value} destroyed.`);
+                appendLog(`Red wins! Blue Rank ${blue.value} destroyed.`);
                 grid[pRow][pCol] = null;
             } else {
-                appendLog("Tie score! Both assets destroyed.");
+                appendLog("Stalemate! Both items eliminated.");
                 grid[pRow][pCol] = null;
                 grid[eRow][eCol] = null;
             }
@@ -276,7 +271,13 @@
         function endTurn() {
             isPlayerTurn = false;
             turnTxt.innerText = "COMPUTER TURN";
-            setTimeout(runComputerAI, 1000);
+            setTimeout(runComputerAI, 800);
         }
 
-        // Basic AI tracking logic loop
+        function runComputerAI() {
+            let legalMoves = [];
+
+            // Scan board allocations for valid machine paths
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 6; c++) {
+                    if (grid[r][c] && grid[r][c].team === 'red' && grid[r][c].value !== 'F' && grid[r][c].value !== 'B') {

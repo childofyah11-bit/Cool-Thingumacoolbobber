@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🥺😎😶‍🌫</title>
+    <title>Cyber Orchestra Matrix Engine</title>
     <style>
         body {
             background-color: #0b0f19;
@@ -94,12 +94,21 @@
             transform: scale(1.1);
             filter: brightness(1.6);
         }
+        
+        /* Error Flash Warning Alert Style */
+        .system-crash-alert {
+            animation: systemFlash 0.5s infinite alternate;
+        }
+        @keyframes systemFlash {
+            from { border-color: #ff3333; box-shadow: 0 0 10px rgba(255,51,51,0.2); }
+            to { border-color: #ff0000; box-shadow: 0 0 25px #ff3333; }
+        }
     </style>
 </head>
 <body>
 
-    <h1></h1>
-    <div class="subtitle">Click matrix grids to mutate or improve the melodies. Play audio engine to engage monitoring systems.</div>
+    <h1>CYBER ORCHESTRA MATRIX</h1>
+    <div class="subtitle">Click matrix grids to add custom notes. Play engine to engage systems.</div>
 
     <div class="controls">
         <button id="playBtn">START AUDIO ENGINE</button>
@@ -143,11 +152,46 @@
         </div>
     </div>
 
+    <!-- LIVE DEBUGGING CONSOLE MAIN DISPLAY OVERLAY -->
+    <div id="debug-console-panel" style="margin-top: 30px; max-width: 900px; width: 100%; background: #070a12; border: 1px dashed #ff3333; border-radius: 6px; padding: 15px; box-shadow: inset 0 0 10px rgba(255, 51, 51, 0.15);">
+        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #ff3333; border-bottom: 1px solid #ff3333; padding-bottom: 5px; margin-bottom: 10px; font-size: 13px;">
+            <span>🛡️ SYSTEM ERROR & DIAGNOSTIC INTERCEPTOR</span>
+            <span id="debug-status">STATUS: MONITORING ACTIVE</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 12px;">
+            <div>
+                <div style="color: #8a99ad; font-weight: bold;">METRICS MONITOR:</div>
+                <div id="metric-total" style="margin: 4px 0; color: #4af626;">Total System Events: 0</div>
+                <div id="metric-load" style="margin: 4px 0; color: #4af626;">Audio Synth Engine Stream: Connected</div>
+            </div>
+            <div>
+                <div style="color: #8a99ad; font-weight: bold;">LIVE LOG TERMINAL FEED:</div>
+                <div id="debug-log-feed" style="height: 80px; overflow-y: auto; color: #ff9900; line-height: 1.4; font-family: monospace;">[Ready. Waiting for user initialization inputs...]</div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // GLOBAL ERROR INTERCEPT DAEMON LAYER
+        window.addEventListener('error', function(e) {
+            const consolePanel = document.getElementById('debug-console-panel');
+            const statusLabel = document.getElementById('debug-status');
+            const logFeed = document.getElementById('debug-log-feed');
+            
+            if(consolePanel) consolePanel.classList.add('system-crash-alert');
+            if(statusLabel) statusLabel.innerText = "CRITICAL FAILURE DETECTED";
+            
+            if(logFeed) {
+                const errorMsg = `<span style="color: #ff3333; font-weight: bold;">[FATAL ERROR] ${e.message} at line ${e.lineno}:${e.colno}</span><br>`;
+                logFeed.innerHTML = errorMsg + logFeed.innerHTML;
+            }
+        });
+
         let audioCtx = null;
         let isPlaying = false;
         let currentStep = 0;
         let intervalId = null;
+        let totalSystemEvents = 0;
 
         const scale = [
             [65.41, 73.42, 78.39, 87.31, 98.00, 110.00, 116.54, 130.81],   
@@ -156,7 +200,7 @@
             [523.25, 587.33, 627.19, 698.46, 783.99, 880.00, 932.33, 1046.50] 
         ];
 
-        // Safe explicit matrix allocation generation loops
+        // Safe program initialization sequence matrix generator loop 
         const patterns = [];
         for (let o = 0; o < 4; o++) {
             patterns[o] = [];
@@ -165,11 +209,11 @@
             }
         }
 
-        // Program automatic starter music melodies directly into data grid spaces
-        patterns[0][7][0] = 1; patterns[0][7][4] = 1; // Sub bass hits
-        patterns[1][4][2] = 1; patterns[1][5][6] = 1; // Glitch string accents
-        patterns[2][2][0] = 1; patterns[2][2][4] = 1; // Brass support chords
-        patterns[3][0][1] = 1; patterns[3][1][3] = 1; patterns[3][2][5] = 1; patterns[3][3][7] = 1; // Arp run
+        // Program starter track rhythms cleanly without standard JavaScript crashes
+        patterns[0][7][0] = 1; patterns[0][7][4] = 1; // Sub hits
+        patterns[1][4][2] = 1; patterns[1][4][6] = 1; // String spikes
+        patterns[2][2][0] = 1; patterns[2][5][4] = 1; // Chords setup
+        patterns[3][0][1] = 1; patterns[3][3][3] = 1; patterns[3][5][5] = 1; patterns[3][7][7] = 1; // Arp layout
 
         function initElements() {
             for (let o = 0; o < 4; o++) {
@@ -190,69 +234,3 @@
                         cell.addEventListener('click', () => {
                             const isSel = cell.classList.toggle('selected');
                             patterns[o][r][c] = isSel ? 1 : 0;
-                        });
-                        gridEl.appendChild(cell);
-                    }
-                }
-            }
-        }
-
-        function triggerSynthVoice(orchestraIndex, frequency, time) {
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            const filter = audioCtx.createBiquadFilter();
-
-            osc.connect(filter);
-            filter.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-
-            osc.frequency.setValueAtTime(frequency, time);
-
-            logDiagnosticEvent(orchestraIndex, frequency, time);
-
-            if (orchestraIndex === 0) {
-                osc.type = 'sine';
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(160, time);
-                gainNode.gain.setValueAtTime(0.5, time);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.35);
-                osc.start(time);
-                osc.stop(time + 0.4);
-            } 
-            else if (orchestraIndex === 1) {
-                osc.type = 'sawtooth';
-                filter.type = 'highpass';
-                filter.frequency.setValueAtTime(800, time);
-                gainNode.gain.setValueAtTime(0.18, time);
-                gainNode.gain.linearRampToValueAtTime(0.01, time + 0.2);
-                osc.start(time);
-                osc.stop(time + 0.22);
-            } 
-            else if (orchestraIndex === 2) {
-                osc.type = 'square';
-                filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(600, time);
-                filter.frequency.exponentialRampToValueAtTime(300, time + 0.3);
-                gainNode.gain.setValueAtTime(0.12, time);
-                gainNode.gain.linearRampToValueAtTime(0.001, time + 0.4);
-                osc.start(time);
-                osc.stop(time + 0.42);
-            } 
-            else if (orchestraIndex === 3) {
-                osc.type = 'triangle';
-                filter.type = 'peaking';
-                filter.frequency.setValueAtTime(1500, time);
-                gainNode.gain.setValueAtTime(0.22, time);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
-                osc.start(time);
-                osc.stop(time + 0.18);
-            }
-        }
-
-        function clockTick() {
-            const playTime = audioCtx.currentTime + 0.05;
-
-            document.querySelectorAll('.cell.playing').forEach(el => el.classList.remove('playing'));
-
-            for (let o = 0; o < 4; o++) {
-                for (let r = 0; r < 8; r++) {

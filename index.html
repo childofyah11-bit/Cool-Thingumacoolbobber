@@ -3,234 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Debug</title>
+    <title>System Debugger & Threat Scanner</title>
     <style>
         body {
-            background-color: #0b0f19;
-            color: #4af626;
-            font-family: 'Courier New', monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background-color: #0b1016;
+            color: #00ffcc;
+            font-family: 'Courier New', Courier, monospace;
             padding: 20px;
             margin: 0;
         }
-        h1 {
-            text-shadow: 0 0 10px #4af626;
-            margin-bottom: 5px;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #00ffcc;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
         }
-        .subtitle {
-            color: #8a99ad;
-            margin-bottom: 25px;
-            font-size: 14px;
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            text-shadow: 0 0 8px #00ffcc;
         }
         .controls {
+            display: flex;
+            justify-content: space-around;
             margin-bottom: 20px;
         }
         button {
-            background-color: #162235;
-            color: #4af626;
-            border: 2px solid #4af626;
+            background-color: transparent;
+            color: #00ffcc;
+            border: 2px solid #00ffcc;
             padding: 10px 20px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             border-radius: 4px;
-            box-shadow: 0 0 8px rgba(74, 246, 38, 0.2);
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
         button:hover {
-            background-color: #4af626;
-            color: #0b0f19;
-            box-shadow: 0 0 15px #4af626;
+            background-color: #00ffcc;
+            color: #0b1016;
+            box-shadow: 0 0 10px #00ffcc;
         }
-        .orchestra-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 25px;
-            max-width: 900px;
+        button:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+        }
+        .progress-bar-container {
             width: 100%;
+            background-color: #1a2330;
+            border: 1px solid #00ffcc;
+            height: 25px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
         }
-        .orchestra-card {
-            background: #111827;
-            border: 1px solid #1f293d;
-            border-radius: 8px;
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #00ffcc;
+            transition: width 0.1s linear;
+        }
+        .terminal {
+            background-color: #05080c;
+            border: 1px solid #334455;
+            height: 300px;
             padding: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.6;
         }
-        .orchestra-card.active-neon-0 { border-color: #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
-        .orchestra-card.active-neon-1 { border-color: #ff007f; box-shadow: 0 0 10px rgba(255,0,127,0.3); }
-        .orchestra-card.active-neon-2 { border-color: #9d4edd; box-shadow: 0 0 10px rgba(157,78,221,0.3); }
-        .orchestra-card.active-neon-3 { border-color: #ffb703; box-shadow: 0 0 10px rgba(255,183,3,0.3); }
-
-        .orchestra-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .orchestra-title {
-            font-weight: bold;
-            font-size: 16px;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 4px;
-        }
-        .cell {
-            aspect-ratio: 1;
-            background-color: #1f293d;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: background-color 0.1s;
-        }
-        .orchestra-card:nth-child(1) .cell.selected { background-color: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
-        .orchestra-card:nth-child(2) .cell.selected { background-color: #ff007f; box-shadow: 0 0 8px #ff007f; }
-        .orchestra-card:nth-child(3) .cell.selected { background-color: #9d4edd; box-shadow: 0 0 8px #9d4edd; }
-        .orchestra-card:nth-child(4) .cell.selected { background-color: #ffb703; box-shadow: 0 0 8px #ffb703; }
-        
-        .cell.playing {
-            transform: scale(1.1);
-            filter: brightness(1.6);
-        }
-        
-        /* Error Flash Warning Alert Style */
-        .system-crash-alert {
-            animation: systemFlash 0.5s infinite alternate;
-        }
-        @keyframes systemFlash {
-            from { border-color: #ff3333; box-shadow: 0 0 10px rgba(255,51,51,0.2); }
-            to { border-color: #ff0000; box-shadow: 0 0 25px #ff3333; }
-        }
+        .log-info { color: #ffffff; }
+        .log-warn { color: #ffcc00; }
+        .log-danger { color: #ff3333; font-weight: bold; }
+        .log-success { color: #33ff33; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>CYBER ORCHESTRA MATRIX</h1>
-    <div class="subtitle">Click matrix grids to add custom notes. Play engine to engage systems.</div>
-
+<div class="container">
+    <h1>CORE SYSTEM DEBUGGER v1.0.4</h1>
+    <p style="text-align: center; color: #88a0b0;">Simulated Security Environment</p>
+    
     <div class="controls">
-        <button id="playBtn">START AUDIO ENGINE</button>
+        <button id="scanBtn" onclick="startSimulatedScan()">INITIALIZE DIAGNOSTIC</button>
+        <button id="killBtn" onclick="purgeThreats()" disabled>PURGE DETECTED MALWARE</button>
     </div>
 
-    <div class="orchestra-container">
-        <!-- Neon Sub-Bass Section -->
-        <div class="orchestra-card active-neon-0">
-            <div class="orchestra-header">
-                <span class="orchestra-title" style="color: #00f0ff;"> NEON SUB-BASS</span>
-                <span style="color: #8a99ad; font-size: 12px;">Sine / Low-Pass</span>
-            </div>
-            <div class="grid" id="grid-0"></div>
-        </div>
-
-        <!-- Cyber Strings Section -->
-        <div class="orchestra-card active-neon-1">
-            <div class="orchestra-header">
-                <span class="orchestra-title" style="color: #ff007f;"> GLITCH STRINGS</span>
-                <span style="color: #8a99ad; font-size: 12px;">Sawtooth / High-Pass</span>
-            </div>
-            <div class="grid" id="grid-1"></div>
-        </div>
-
-        <!-- Digital Brass / Chords Section -->
-        <div class="orchestra-card active-neon-2">
-            <div class="orchestra-header">
-                <span class="orchestra-title" style="color: #9d4edd;"> APEX BRASS</span>
-                <span style="color: #8a99ad; font-size: 12px;">Square / Detuned</span>
-            </div>
-            <div class="grid" id="grid-2"></div>
-        </div>
-
-        <!-- Vector Arpeggiator Section -->
-        <div class="orchestra-card active-neon-3">
-            <div class="orchestra-header">
-                <span class="orchestra-title" style="color: #ffb703;"> VECTOR ARPEGGIATOR</span>
-                <span style="color: #8a99ad; font-size: 12px;">Triangle / Echo</span>
-            </div>
-            <div class="grid" id="grid-3"></div>
-        </div>
+    <div class="progress-bar-container">
+        <div id="progressBar" class="progress-bar"></div>
     </div>
 
-    <!-- LIVE DEBUGGING CONSOLE MAIN DISPLAY OVERLAY -->
-    <div id="debug-console-panel" style="margin-top: 30px; max-width: 900px; width: 100%; background: #070a12; border: 1px dashed #ff3333; border-radius: 6px; padding: 15px; box-shadow: inset 0 0 10px rgba(255, 51, 51, 0.15);">
-        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #ff3333; border-bottom: 1px solid #ff3333; padding-bottom: 5px; margin-bottom: 10px; font-size: 13px;">
-            <span>🛡️ SYSTEM ERROR & DIAGNOSTIC INTERCEPTOR</span>
-            <span id="debug-status">STATUS: MONITORING ACTIVE</span>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 12px;">
-            <div>
-                <div style="color: #8a99ad; font-weight: bold;">METRICS MONITOR:</div>
-                <div id="metric-total" style="margin: 4px 0; color: #4af626;">Total System Events: 0</div>
-                <div id="metric-load" style="margin: 4px 0; color: #4af626;">Audio Synth Engine Stream: Connected</div>
-            </div>
-            <div>
-                <div style="color: #8a99ad; font-weight: bold;">LIVE LOG TERMINAL FEED:</div>
-                <div id="debug-log-feed" style="height: 80px; overflow-y: auto; color: #ff9900; line-height: 1.4; font-family: monospace;">[Ready. Waiting for user initialization inputs...]</div>
-            </div>
-        </div>
+    <div id="terminal" class="terminal">
+        <span class="log-info">[SYSTEM] Debugger ready. Click "INITIALIZE DIAGNOSTIC" to begin analysis...</span><br>
     </div>
+</div>
 
-    <script>
-        // GLOBAL ERROR INTERCEPT DAEMON LAYER
-        window.addEventListener('error', function(e) {
-            const consolePanel = document.getElementById('debug-console-panel');
-            const statusLabel = document.getElementById('debug-status');
-            const logFeed = document.getElementById('debug-log-feed');
-            
-            if(consolePanel) consolePanel.classList.add('system-crash-alert');
-            if(statusLabel) statusLabel.innerText = "CRITICAL FAILURE DETECTED";
-            
-            if(logFeed) {
-                const errorMsg = `<span style="color: #ff3333; font-weight: bold;">[FATAL ERROR] ${e.message} at line ${e.lineno}:${e.colno}</span><br>`;
-                logFeed.innerHTML = errorMsg + logFeed.innerHTML;
+<script>
+    const terminal = document.getElementById('terminal');
+    const progressBar = document.getElementById('progressBar');
+    const scanBtn = document.getElementById('scanBtn');
+    const killBtn = document.getElementById('killBtn');
+    
+    let simulatedThreatsFound = false;
+
+    const logMessages = [
+        { time: 200, text: "[DEBUG] Accessing memory registers...", type: "log-info" },
+        { time: 600, text: "[DEBUG] Analyzing master boot record sectors...", type: "log-info" },
+        { time: 1200, text: "[WARNING] Unrecognized background thread detected in ID: 4092", type: "log-warn" },
+        { time: 1800, text: "[DEBUG] Verifying integrity of core system libraries...", type: "log-info" },
+        { time: 2300, text: "[CRITICAL] MALWARE DETECTED: Trojan.Generic.Cryptominer residing in Temp folder!", type: "log-danger" },
+        { time: 2800, text: "[CRITICAL] MALWARE DETECTED: Adware.Helper.Spyware tracking browser metrics!", type: "log-danger" },
+        { time: 3500, text: "[DEBUG] Scanning active port allocations...", type: "log-info" },
+        { time: 4200, text: "[WARNING] Outbound connection anomaly on Port 8080", type: "log-warn" },
+        { time: 4800, text: "[SYSTEM] Scan complete. 2 Critical Anomalies detected. Immediate intervention required.", type: "log-warn" }
+    ];
+
+    function appendLog(text, type) {
+        const line = document.createElement('span');
+        line.className = type;
+        line.innerText = text;
+        terminal.appendChild(line);
+        terminal.appendChild(document.createElement('br'));
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function startSimulatedScan() {
+        // Reset states
+        terminal.innerHTML = "";
+        progressBar.style.width = "0%";
+        scanBtn.disabled = true;
+        killBtn.disabled = true;
+        simulatedThreatsFound = false;
+        
+        appendLog("[SYSTEM] Starting complete system scan...", "log-info");
+
+        // Progress bar simulation
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 2;
+            progressBar.style.width = progress + "%";
+            if (progress >= 100) {
+                clearInterval(progressInterval);
             }
+        }, 100);
+
+        // Print system logs sequentially
+        logMessages.forEach(msg => {
+            setTimeout(() => {
+                appendLog(msg.text, msg.type);
+                if (msg.type === "log-danger") {
+                    simulatedThreatsFound = true;
+                }
+                if (msg.text.includes("Scan complete")) {
+                    killBtn.disabled = !simulatedThreatsFound;
+                    scanBtn.disabled = false;
+                }
+            }, msg.time);
         });
+    }
 
-        let audioCtx = null;
-        let isPlaying = false;
-        let currentStep = 0;
-        let intervalId = null;
-        let totalSystemEvents = 0;
+    function purgeThreats() {
+        killBtn.disabled = true;
+        appendLog("[SYSTEM] Initiating threat purge sequence...", "log-warn");
+        
+        setTimeout(() => {
+            appendLog("[ACTION] Isolating Trojan.Generic.Cryptominer...", "log-info");
+        }, 800);
+        
+        setTimeout(() => {
+            appendLog("[SUCCESS] Trojan.Generic.Cryptominer successfully destroyed.", "log-success");
+        }, 1800);
 
-        const scale = [
-            [65.41, 73.42, 78.39, 87.31, 98.00, 110.00, 116.54, 130.81],   
-            [130.81, 146.83, 156.80, 174.61, 196.00, 220.00, 233.08, 261.63], 
-            [261.63, 293.66, 313.60, 349.23, 392.00, 440.00, 466.16, 523.25], 
-            [523.25, 587.33, 627.19, 698.46, 783.99, 880.00, 932.33, 1046.50] 
-        ];
+        setTimeout(() => {
+            appendLog("[ACTION] Removing Adware.Helper.Spyware registries...", "log-info");
+        }, 2400);
 
-        // Safe program initialization sequence matrix generator loop 
-        const patterns = [];
-        for (let o = 0; o < 4; o++) {
-            patterns[o] = [];
-            for (let r = 0; r < 8; r++) {
-                patterns[o][r] = new Array(8).fill(0);
-            }
-        }
+        setTimeout(() => {
+            appendLog("[SUCCESS] Adware.Helper.Spyware neutralized and purged from disk.", "log-success");
+            appendLog("[SYSTEM] All active threats killed. Your simulated environment is safe.", "log-success");
+            progressBar.style.width = "0%";
+            scanBtn.disabled = false;
+        }, 3400);
+    }
+</script>
 
-        // Program starter track rhythms cleanly without standard JavaScript crashes
-        patterns[0][7][0] = 1; patterns[0][7][4] = 1; // Sub hits
-        patterns[1][4][2] = 1; patterns[1][4][6] = 1; // String spikes
-        patterns[2][2][0] = 1; patterns[2][5][4] = 1; // Chords setup
-        patterns[3][0][1] = 1; patterns[3][3][3] = 1; patterns[3][5][5] = 1; patterns[3][7][7] = 1; // Arp layout
-
-        function initElements() {
-            for (let o = 0; o < 4; o++) {
-                const gridEl = document.getElementById(`grid-${o}`);
-                gridEl.innerHTML = ''; 
-                for (let r = 0; r < 8; r++) {
-                    for (let c = 0; c < 8; c++) {
-                        const cell = document.createElement('div');
-                        cell.classList.add('cell');
-                        cell.dataset.orc = o;
-                        cell.dataset.row = r;
-                        cell.dataset.col = c;
-                        
-                        if (patterns[o][r][c] === 1) {
-                            cell.classList.add('selected');
-                        }
-
-                        cell.addEventListener('click', () => {
-                            const isSel = cell.classList.toggle('selected');
-                            patterns[o][r][c] = isSel ? 1 : 0;
+</body>
+</html>
